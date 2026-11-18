@@ -169,7 +169,13 @@ const totalStars = () => Object.values(S.stars).reduce((a, b) => a + b, 0);
 /* ElGatoLoco art: assets/cat_<pose>.webp (wave, cheer, sit, walk, fly) */
 const pic = (name, alt = '') => `<img class="pic" src="assets/${name}.webp" alt="${alt}" draggable="false">`;
 const stickerPic = (w, i) => pic(`st_${w.id}_${i}`, w.stickers[i]);
-const cat = pose => `<img class="catimg" src="assets/cat_${pose}.webp" alt="" draggable="false">`;
+// animated poses: assets/anim_<pose>.webp is one row of frames — [frame count, frame width, frame height, frames per second]
+const SPR = { walk: [16, 233, 256, 14], wave: [12, 283, 384, 8], cheer: [16, 237, 320, 12], purr: [10, 307, 384, 8] };
+const cat = pose => {
+  const s = SPR[pose];
+  return s ? `<span class="sprite" style="--src:url(assets/anim_${pose}.webp);--n:${s[0]};--ar:${s[1]}/${s[2]};--dur:${(s[0] / s[3]).toFixed(2)}s"></span>`
+    : `<img class="catimg" src="assets/cat_${pose}.webp" alt="" draggable="false">`;
+};
 
 /* ---------- sound ---------- */
 let ac;
@@ -608,7 +614,7 @@ function hi5() {
 function petBreak(mode) {
   const p = $('#panel'), need = 2400;
   let dist = 0, lx = null, ly = 0, lastFx = 0, done = false, tmr;
-  p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${cat('sit')}</div></div><div class="meter"><i></i></div>`;
+  p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${cat('purr')}</div></div><div class="meter"><i></i></div>`;
   p.className = 'panel show'; sfx('meow'); say(T(mode), S.lang, true);
   const z = $('.petzone'), bar = $('.meter i'), kitty = z.firstChild;
   const mv = e => {
@@ -659,7 +665,7 @@ function paintPz() {
 
 /* action games on canvas: every target is an answer to the question above */
 const loadImg = n => { const i = new Image(); i.src = `assets/${n}.webp`; return i; };
-const catSit = loadImg('cat_sit'), catFly = loadImg('cat_fly'), yarnImg = loadImg('yarn');
+const catSit = loadImg('cat_sit'), flyAnim = loadImg('anim_fly'), yarnImg = loadImg('yarn');
 function arcade(kind) {
   const tok = cur, p = $('#panel');
   $('.level').classList.add('arcade');
@@ -672,6 +678,8 @@ function arcade(kind) {
   fit();
   // draw an image h pixels tall, centred on x; y is its centre, or its bottom edge when `bottom` is set
   const drawFit = (img, x, y, h, bottom) => { if (!img.naturalWidth) return; const w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, x - w / 2, bottom ? y - h : y - h / 2, w, h); };
+  // draw the current frame of a one-row animation strip with n frames, centred on x, y
+  const drawAnim = (img, n, x, y, h, fps) => { if (!img.naturalWidth) return; const fw = img.naturalWidth / n, w = h * fw / img.naturalHeight; ctx.drawImage(img, (Math.floor(time * fps) % n) * fw, 0, fw, img.naturalHeight, x - w / 2, y - h / 2, w, h); };
   const burst = (x, y, e) => { for (let i = 0; i < 10; i++) { const a = Math.random() * 6.28, s = 80 + Math.random() * 170; fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 90, life: 0.8, t: e || pick(['⭐', '✨', '💜']) }); } };
   const mk = (label, i) => {
     let fs = [...label].length <= 3 ? 34 : 22, tw;
@@ -784,7 +792,7 @@ function arcade(kind) {
           clouds.forEach(c => { ctx.beginPath(); for (const [dx, dy, r] of [[-20, 4, 13], [-4, -5, 18], [15, 2, 14], [0, 8, 14]]) { ctx.moveTo(c.x + dx + r, c.y + dy); ctx.arc(c.x + dx, c.y + dy, r, 0, 7); } ctx.fill(); });
           if (col) col.it.forEach((t, k) => { if (t.alive) pill(t, RING[k % 4]); });
           ctx.save(); ctx.translate(Wd * 0.22, cy); ctx.rotate(Math.max(-0.45, Math.min(0.6, vy / 700)));
-          drawFit(catFly, 0, 0, 60); ctx.restore();
+          drawAnim(flyAnim, 16, 0, 0, 66, 14); ctx.restore();
         },
       };
     },

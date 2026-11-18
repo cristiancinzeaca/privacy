@@ -312,3 +312,9 @@ p { margin: 0; }
 
 /* the question can be tapped to hear it again */
 .q[data-act] { cursor: pointer; }
+
+/* frame-by-frame cat animations: the picture is one row of --n frames */
+.sprite { display: block; height: 100%; aspect-ratio: var(--ar); max-width: 100%; margin: 0 auto; pointer-events: none; background: var(--src) 0 0 / calc(var(--n) * 100%) 100% no-repeat; animation: sprite var(--dur) steps(var(--n), jump-none) infinite; filter: drop-shadow(0 5px 6px rgba(20, 16, 50, .28)); }
+.scene:not(.walking) .hero .sprite { animation: none; }
+@keyframes sprite { to { background-position: 100% 0; } }
+@media (prefers-reduced-motion: reduce) { .sprite { animation: none !important; } }

@@ -11,8 +11,10 @@ from PIL import Image
 from scipy import ndimage
 
 
-def cutout(src, dst, size=512, holes=False):
-    im = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
+def rgba(src, holes=False):
+    """Return the picture (path or PIL image) as RGBA with its light backdrop made transparent."""
+    pic = src if isinstance(src, Image.Image) else Image.open(src)
+    im = np.asarray(pic.convert("RGB")).astype(np.float32)
     h, w, _ = im.shape
     lum = im @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
     sat = im.max(2) - im.min(2)
@@ -28,6 +30,8 @@ def cutout(src, dst, size=512, holes=False):
     if holes:  # also clear large enclosed backdrop areas (e.g. inside a padlock shackle)
         sizes = np.bincount(lab.ravel())
         big = np.nonzero(sizes > 1500)[0]
+        if holes == "low":  # only gaps in the lower half (between legs), never the whites of the eyes
+            big = np.array([b for b in big if b > 0 and ndimage.center_of_mass(lab == b)[0] > 0.55 * h], dtype=int)
         region |= np.isin(lab, big[big > 0])
     region = ndimage.binary_opening(region, iterations=1) | region
     # soft matte: inside the backdrop region alpha falls with lightness (dark fur edge -> opaque)
@@ -44,12 +48,40 @@ def cutout(src, dst, size=512, holes=False):
     aa = np.clip(a, 0.05, 1)[..., None]
     fg = np.where((a[..., None] < 0.999), (im - (1 - aa) * bg) / aa, im)
     out = np.dstack([np.clip(fg, 0, 255), a * 255]).astype(np.uint8)
-    img = Image.fromarray(out, "RGBA")
-    box = Image.fromarray((a > 0.04).astype(np.uint8) * 255).getbbox()
-    img = img.crop(box)
+    return Image.fromarray(out, "RGBA")
+
+
+def cutout(src, dst, size=512, holes=False):
+    img = rgba(src, holes)
+    img = img.crop(img.getchannel("A").point(lambda v: 255 if v > 10 else 0).getbbox())
     img.thumbnail((size, size), Image.LANCZOS)
     img.save(dst, "WEBP", quality=90, method=6)
     print(dst, img.size)
+
+
+def sheet(src, cols, rows, dst, size=256):
+    """Turn a grid sprite sheet on a light backdrop into one horizontal strip of transparent frames.
+
+    Every frame is cropped to the same box (the union of all frames), so the feet stay on one line.
+    """
+    im = Image.open(src).convert("RGB")
+    cw, ch = im.width // cols, im.height // rows
+    frames = []
+    for i in range(cols * rows):
+        cell = im.crop(((i % cols) * cw, (i // cols) * ch, (i % cols + 1) * cw, (i // cols + 1) * ch))
+        frames.append(rgba(cell.resize((cw * 3, ch * 3), Image.LANCZOS), holes="low"))
+    union = None
+    for f in frames:
+        b = f.getchannel("A").point(lambda v: 255 if v > 10 else 0).getbbox()
+        union = b if union is None else (min(union[0], b[0]), min(union[1], b[1]), max(union[2], b[2]), max(union[3], b[3]))
+    frames = [f.crop(union) for f in frames]
+    k = size / max(frames[0].size)
+    fw, fh = round(frames[0].width * k), round(frames[0].height * k)
+    out = Image.new("RGBA", (fw * len(frames), fh))
+    for i, f in enumerate(frames):
+        out.paste(f.resize((fw, fh), Image.LANCZOS), (i * fw, 0))
+    out.save(dst, "WEBP", quality=88, method=6)
+    print(dst, "frames", len(frames), "frame", (fw, fh))
 
 
 def strip(src, dst):
@@ -66,6 +98,8 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "cutout":
         cutout(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 512, "holes" in sys.argv[5:])
+    elif cmd == "sheet":  # sheet IN.png COLS ROWS OUT.webp [SIZE]
+        sheet(sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5], int(sys.argv[6]) if len(sys.argv) > 6 else 256)
     elif cmd == "strip":
         strip(sys.argv[2], sys.argv[3])
     else:
