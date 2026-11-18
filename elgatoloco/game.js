@@ -12,7 +12,7 @@ const LANGS = ['ro', 'es', 'en'];
 
 /* ---------- state ---------- */
 const KEY = 'elgatoloco-v1';
-const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [] };
+const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {} };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
@@ -207,13 +207,14 @@ function sfx(name, i) {
     else if (name === 'gem') tone([330, 415, 494, 622][i], n, 0.32, 'sine', 0.2);
   } catch (e) {}
 }
-function say(text, lang) {
+function say(text, lang, keep) {
   if (!S.sound || !text) return;
   try {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang === 'es' ? 'es-ES' : lang === 'en' ? 'en-US' : 'ro-RO';
     u.rate = 0.85;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    if (!keep) speechSynthesis.cancel();
+    speechSynthesis.speak(u);
   } catch (e) {}
 }
 
@@ -548,7 +549,7 @@ function walk() {
 }
 function renderCh() {
   const c = cur.ch, p = $('#panel');
-  let h = `<p class="q" id="q">${c.q}</p>`;
+  let h = `<p class="q" id="q" data-act="say" data-lang="${S.lang}" data-text="${plain(c.q).replace(/"/g, '')}">${c.q}</p>`;
   if (c.type === 'choice') {
     if (c.stim) h += `<div class="stim">${c.stim}</div>`; else h += '<div class="stim" style="min-height:0;flex:.4"></div>';
     h += `<div class="opts${c.opts.length === 3 || c.n3 ? ' n3' : ''}${c.col ? ' col' : ''}">${c.opts.map((o, i) => `<button class="opt ${c.cls || ''}" data-act="opt" data-i="${i}">${o}</button>`).join('')}</div>`;
@@ -565,7 +566,8 @@ function renderCh() {
     h += `<div class="gems">${col.map((g, i) => `<button class="gem" style="--g:${g}" data-act="gem" data-i="${i}">${sh[i]}</button>`).join('')}</div><p class="hintline"></p>`;
   }
   p.innerHTML = h; p.className = 'panel show';
-  if (c.auto) say(c.auto[0], c.auto[1]);
+  say(plain(c.q), S.lang);
+  if (c.auto) say(c.auto[0], c.auto[1], true);
   if (c.type === 'simon') later(700, playSeq);
 }
 function mistake() {
@@ -598,7 +600,7 @@ function playSeq() {
 function hi5() {
   const p = $('#panel'), id = ++cur.hiId; cur.hi = id;
   p.innerHTML = `<p class="q">${T('hi5')}</p><div class="hi5"><div class="cat">${cat('wave')}</div><button class="paw" data-act="hi5" aria-label="${T('hi5')}">${pic('paw', '🐾')}</button></div>`;
-  p.className = 'panel show'; sfx('meow');
+  p.className = 'panel show'; sfx('meow'); say(T('hi5'), S.lang, true);
   later(6000, () => { if (cur.hi === id) { cur.hi = 0; walk(); } });
 }
 
@@ -607,7 +609,7 @@ function petBreak(mode) {
   const p = $('#panel'), need = 2400;
   let dist = 0, lx = null, ly = 0, lastFx = 0, done = false, tmr;
   p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${cat('sit')}</div></div><div class="meter"><i></i></div>`;
-  p.className = 'panel show'; sfx('meow');
+  p.className = 'panel show'; sfx('meow'); say(T(mode), S.lang, true);
   const z = $('.petzone'), bar = $('.meter i'), kitty = z.firstChild;
   const mv = e => {
     if (done || !cur) return;
@@ -661,7 +663,7 @@ const catSit = loadImg('cat_sit'), catFly = loadImg('cat_fly'), yarnImg = loadIm
 function arcade(kind) {
   const tok = cur, p = $('#panel');
   $('.level').classList.add('arcade');
-  p.innerHTML = `<div class="abar"><p class="q" id="q"></p><div class="stim mini" id="stim"></div><p class="hintline">${T('hint_' + kind)}</p></div><canvas class="cv"></canvas>`;
+  p.innerHTML = `<div class="abar"><p class="q" id="q" data-act="say" data-lang="${S.lang}"></p><div class="stim mini" id="stim"></div><p class="hintline">${T('hint_' + kind)}</p></div><canvas class="cv"></canvas>`;
   p.className = 'panel show arc';
   const cv = $('.cv'), ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1);
   let Wd = 0, Ht = 0, Q = null, got = 0, run = true, last = performance.now(), time = 0;
@@ -688,8 +690,9 @@ function arcade(kind) {
   const RING = ['#ff6b6b', '#3d8bfd', '#2fbf71', '#f5a524'];
   function newQ() {
     Q = askQ(kind === 'slice' ? 4 : 3);
-    $('#q').textContent = Q.q; $('#stim').innerHTML = Q.stim || '';
-    if (Q.auto) say(Q.auto[0], Q.auto[1]);
+    $('#q').textContent = Q.q; $('#q').dataset.text = Q.q; $('#stim').innerHTML = Q.stim || '';
+    say(Q.q, S.lang);
+    if (Q.auto) say(Q.auto[0], Q.auto[1], true);
     g.onQ();
   }
   function correct(x, y) {
@@ -877,6 +880,10 @@ function finish() {
 /* ---------- input ---------- */
 const ACT = {
   set(d) {
+    if (d.k === 'age' && +d.v !== S.age) { // each age group keeps its own stars and stickers
+      S.byAge[S.age] = { stars: S.stars, stickers: S.stickers };
+      const p = S.byAge[+d.v] || {}; S.stars = p.stars || {}; S.stickers = p.stickers || [];
+    }
     S[d.k] = d.k === 'age' ? +d.v : d.k === 'sound' ? d.v === 'true' : d.v;
     if (d.k === 'lang' && !S.setup) S.learn = S.lang === 'es' ? 'en' : S.lang === 'en' ? 'es' : 'both';
     save(); sfx('tap'); show(view);
@@ -888,7 +895,7 @@ const ACT = {
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
-    S.stars = {}; S.stickers = []; S.setup = false; save(); show('title');
+    S.stars = {}; S.stickers = []; S.byAge = {}; S.setup = false; save(); show('title');
   },
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {

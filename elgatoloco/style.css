@@ -309,3 +309,6 @@ p { margin: 0; }
 .sticker { overflow: hidden; }
 .obst { width: 96px; height: 96px; font-size: 0; }
 .paw { padding: 10px; }
+
+/* the question can be tapped to hear it again */
+.q[data-act] { cursor: pointer; }
