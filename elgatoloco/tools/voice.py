@@ -18,7 +18,7 @@ def mp3(pcm, rate):
     buf = io.BytesIO()
     out = av.open(buf, "w", format="mp3")
     st = out.add_stream("mp3", rate=rate)
-    st.bit_rate = 48000
+    st.bit_rate = 64000
     st.layout = "mono"
     frame = av.AudioFrame.from_ndarray(pcm.reshape(1, -1), format="s16", layout="mono")
     frame.sample_rate = rate
@@ -33,7 +33,7 @@ def mp3(pcm, rate):
 def main():
     texts, voices_dir, out_dir = json.load(open(sys.argv[1], encoding="utf-8")), sys.argv[2], sys.argv[3]
     os.makedirs(out_dir, exist_ok=True)
-    cfg = SynthesisConfig(length_scale=1.12)  # a little slower, for young listeners
+    cfg = SynthesisConfig(length_scale=1.04)  # natural pace, a touch slower for young listeners
     index = {}
     for lang, name in VOICES.items():
         voice = PiperVoice.load(os.path.join(voices_dir, name + ".onnx"))
@@ -45,6 +45,8 @@ def main():
             wav.seek(0)
             with wave.open(wav, "rb") as r:
                 rate, pcm = r.getframerate(), np.frombuffer(r.readframes(r.getnframes()), dtype=np.int16)
+            # Piper records at full scale; leave headroom so the clip never distorts when played
+            pcm = (pcm.astype(np.float32) * (0.6 * 32767 / max(1, int(np.abs(pcm).max())))).astype(np.int16)
             pad = np.zeros(int(rate * 0.08), dtype=np.int16)  # a breath of silence around each clip
             clip = mp3(np.concatenate([pad, pcm, pad]), rate)
             index[lang][t] = [len(pack), len(clip)]

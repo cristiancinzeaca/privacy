@@ -253,7 +253,7 @@ function nextVoice() {
   }).then(a => {
     if (VOICE.tok !== tok) return;
     const src = ac.createBufferSource(), g = ac.createGain();
-    src.buffer = a; g.gain.value = 1.3; src.connect(g); g.connect(ac.destination);
+    src.buffer = a; g.gain.value = 1; src.connect(g); g.connect(ac.destination);
     src.onended = done; VOICE.cur = src; src.start();
   }).catch(tts);
 }
