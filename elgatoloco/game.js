@@ -213,15 +213,49 @@ function sfx(name, i) {
     else if (name === 'gem') tone([330, 415, 494, 622][i], n, 0.32, 'sine', 0.2);
   } catch (e) {}
 }
+/* Recorded voice: assets/voice/<lang>.bin holds MP3 clips one after another and index.json maps
+   lang -> text -> [offset, length]. Phrases without a clip fall back to the device's own voice. */
+const VOICE = { idx: null, bin: {}, q: [], cur: null, busy: false, tok: null };
+try { fetch('assets/voice/index.json').then(r => r.json()).then(j => { VOICE.idx = j; }).catch(() => {}); } catch (e) {}
+const voicePack = lang => VOICE.bin[lang] || (VOICE.bin[lang] = fetch(`assets/voice/${lang}.bin`).then(r => r.arrayBuffer()));
+function hush() {
+  VOICE.q = []; VOICE.tok = null; VOICE.busy = false;
+  if (VOICE.cur) { try { VOICE.cur.onended = null; VOICE.cur.stop(); } catch (e) {} VOICE.cur = null; }
+  try { speechSynthesis.cancel(); } catch (e) {}
+}
+// keep = say it after whatever is being spoken instead of interrupting it
 function say(text, lang, keep) {
   if (!S.sound || !text) return;
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang === 'es' ? 'es-ES' : lang === 'en' ? 'en-US' : 'ro-RO';
-    u.rate = 0.85;
-    if (!keep) speechSynthesis.cancel();
-    speechSynthesis.speak(u);
-  } catch (e) {}
+  if (!keep) hush();
+  VOICE.q.push([text, lang]);
+  if (!VOICE.busy) nextVoice();
+}
+function nextVoice() {
+  const it = VOICE.q.shift();
+  if (!it) { VOICE.busy = false; return; }
+  VOICE.busy = true;
+  const [text, lang] = it, tok = VOICE.tok = {}, e = VOICE.idx && VOICE.idx[lang] && VOICE.idx[lang][text];
+  const done = () => { if (VOICE.tok === tok) { VOICE.cur = null; nextVoice(); } };
+  const tts = () => {
+    if (VOICE.tok !== tok) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'es' ? 'es-ES' : lang === 'en' ? 'en-US' : 'ro-RO';
+      u.rate = 0.85; u.onend = u.onerror = done;
+      speechSynthesis.speak(u); setTimeout(done, 7000);
+    } catch (err) { done(); }
+  };
+  if (!e) return tts();
+  voicePack(lang).then(buf => {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    return ac.decodeAudioData(buf.slice(e[0], e[0] + e[1]));
+  }).then(a => {
+    if (VOICE.tok !== tok) return;
+    const src = ac.createBufferSource(), g = ac.createGain();
+    src.buffer = a; g.gain.value = 1.3; src.connect(g); g.connect(ac.destination);
+    src.onended = done; VOICE.cur = src; src.start();
+  }).catch(tts);
 }
 
 /* ---------- challenge generators ---------- */
@@ -439,7 +473,7 @@ const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map
 
 function show(v) {
   cur = null; view = v; resetArmed = false;
-  try { speechSynthesis.cancel(); } catch (e) {}
+  hush();
   ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings })[v]();
 }
 function vTitle() {
@@ -899,7 +933,7 @@ const ACT = {
   start() { S.setup = true; save(); sfx('good'); show('map'); },
   go(d) { sfx('tap'); show(d.v); },
   level(d) { sfx('tap'); startLevel(d.w, +d.i); },
-  mute(d, b) { S.sound = !S.sound; save(); b.textContent = S.sound ? '🔊' : '🔇'; if (!S.sound) { try { speechSynthesis.cancel(); } catch (e) {} } },
+  mute(d, b) { S.sound = !S.sound; save(); b.textContent = S.sound ? '🔊' : '🔇'; if (!S.sound) { hush(); } },
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
