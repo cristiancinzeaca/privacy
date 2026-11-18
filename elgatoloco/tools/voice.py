@@ -2,7 +2,7 @@
 
   python voice.py TEXTS.json VOICES_DIR OUT_DIR
 
-TEXTS.json comes from voice_texts.js. For each language OUT_DIR gets <lang>.bin (all MP3 clips, one after
+TEXTS.json comes from voice_texts.js. For each language OUT_DIR gets <lang>.mp3 (all MP3 clips, one after
 another) and index.json maps  lang -> text -> [offset, length]  into that file.
 Needs piper-tts and av (PyAV).
 """
@@ -49,7 +49,7 @@ def main():
             clip = mp3(np.concatenate([pad, pcm, pad]), rate)
             index[lang][t] = [len(pack), len(clip)]
             pack += clip
-        open(os.path.join(out_dir, lang + ".bin"), "wb").write(pack)
+        open(os.path.join(out_dir, lang + ".mp3"), "wb").write(pack)
         print(lang, len(index[lang]), "clips", len(pack) // 1024, "KB")
     json.dump(index, open(os.path.join(out_dir, "index.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 

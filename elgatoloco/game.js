@@ -213,11 +213,11 @@ function sfx(name, i) {
     else if (name === 'gem') tone([330, 415, 494, 622][i], n, 0.32, 'sine', 0.2);
   } catch (e) {}
 }
-/* Recorded voice: assets/voice/<lang>.bin holds MP3 clips one after another and index.json maps
+/* Recorded voice: assets/voice/<lang>.mp3 holds MP3 clips one after another and index.json maps
    lang -> text -> [offset, length]. Phrases without a clip fall back to the device's own voice. */
 const VOICE = { idx: null, bin: {}, q: [], cur: null, busy: false, tok: null };
 try { fetch('assets/voice/index.json').then(r => r.json()).then(j => { VOICE.idx = j; }).catch(() => {}); } catch (e) {}
-const voicePack = lang => VOICE.bin[lang] || (VOICE.bin[lang] = fetch(`assets/voice/${lang}.bin`).then(r => r.arrayBuffer()));
+const voicePack = lang => VOICE.bin[lang] || (VOICE.bin[lang] = fetch(`assets/voice/${lang}.mp3`).then(r => r.arrayBuffer()));
 function hush() {
   VOICE.q = []; VOICE.tok = null; VOICE.busy = false;
   if (VOICE.cur) { try { VOICE.cur.onended = null; VOICE.cur.stop(); } catch (e) {} VOICE.cur = null; }
