@@ -278,3 +278,34 @@ p { margin: 0; }
 @keyframes pawpulse { to { transform: scale(1.12) rotate(8deg); } }
 @keyframes wig { 0% { transform: rotate(-7deg) translateX(-4px); } 50% { transform: rotate(7deg) translateX(4px); } 100% { transform: rotate(-7deg) translateX(-4px); } }
 @keyframes purr { to { transform: scale(1.06, .95); } }
+
+/* ---------- 3D art: character and world backgrounds (assets/) ---------- */
+.w-words  { --bg: url(assets/bg_words.webp); }
+.w-math   { --bg: url(assets/bg_math.webp); }
+.w-logic  { --bg: url(assets/bg_logic.webp); }
+.w-nature { --bg: url(assets/bg_nature.webp); }
+.w-mix    { --bg: url(assets/bg_mix.webp); }
+
+.catimg { width: 100%; height: 100%; display: block; object-fit: contain; object-position: 50% 100%; pointer-events: none; user-select: none; -webkit-user-drag: none; filter: drop-shadow(0 5px 6px rgba(20, 16, 50, .28)); }
+.title .cat { width: 210px; height: 210px; }
+.done .cat { width: 170px; height: 170px; }
+.cat.mini .catimg { filter: none; }
+
+/* each background file is the picture followed by its mirror image, so it tiles without a seam */
+.scene .bg { position: absolute; top: 0; left: 0; height: 100%; aspect-ratio: 48 / 5; background: var(--bg) 0 0 / 50% 100% repeat-x; animation: scroll 36s linear infinite; animation-play-state: paused; }
+.walking .bg { animation-play-state: running; }
+.hero { left: 8%; bottom: 6%; width: 118px; height: 118px; }
+.obst { bottom: 9%; filter: drop-shadow(0 4px 4px rgba(20, 16, 50, .3)); }
+
+.world { --veil: linear-gradient(100deg, rgba(255, 255, 255, .88) 25%, rgba(255, 255, 255, .15)); background: var(--veil), var(--bg) 0 60% / auto 190%; box-shadow: 0 6px 16px rgba(29, 43, 83, .14); }
+.world.night { --veil: linear-gradient(100deg, rgba(24, 18, 58, .85) 25%, rgba(24, 18, 58, .1)); }
+
+.level .cv { background: linear-gradient(rgba(255, 255, 255, .62), rgba(255, 255, 255, .62)), var(--bg) 0 50% / auto 100%; }
+
+/* pictures for obstacles, stickers, world icons and the high-five paw */
+.pic { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.world .em { width: 64px; height: 64px; flex: none; border-radius: 18px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(29, 43, 83, .25); }
+.world .em .pic, .sticker .pic { object-fit: cover; }
+.sticker { overflow: hidden; }
+.obst { width: 96px; height: 96px; font-size: 0; }
+.paw { padding: 10px; }

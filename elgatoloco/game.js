@@ -166,24 +166,10 @@ const WORLDS = [
 const CASTLE_NEED = 20, STEPS = 5, PER_WORLD = 6;
 const totalStars = () => Object.values(S.stars).reduce((a, b) => a + b, 0);
 
-const CAT = `<svg viewBox="0 0 120 120" aria-hidden="true">
-<g class="tail"><path d="M30 88 Q4 82 10 54" stroke="#342c4d" stroke-width="10" fill="none" stroke-linecap="round"/></g>
-<rect class="leg a" x="36" y="94" width="11" height="22" rx="5.5" fill="#342c4d"/><rect class="leg b" x="70" y="94" width="11" height="22" rx="5.5" fill="#342c4d"/>
-<ellipse cx="58" cy="88" rx="30" ry="21" fill="#1b1726"/>
-<rect class="leg b" x="46" y="96" width="11" height="22" rx="5.5" fill="#1b1726"/><rect class="leg a" x="62" y="96" width="11" height="22" rx="5.5" fill="#1b1726"/>
-<path d="M52 40 L51 11 L71 30Z" fill="#1b1726"/><path d="M81 29 L101 11 L99 40Z" fill="#1b1726"/>
-<path d="M56 33 L56 20 L65 29Z" fill="#ff7aa8"/><path d="M87 29 L96 20 L95 33Z" fill="#ff7aa8"/>
-<circle cx="76" cy="52" r="26" fill="#1b1726"/>
-<ellipse cx="65" cy="49" rx="7.5" ry="8.5" fill="#d7f25a"/><ellipse cx="88" cy="49" rx="7.5" ry="8.5" fill="#d7f25a"/>
-<ellipse cx="66" cy="49" rx="2.6" ry="6.4" fill="#1b1726"/><ellipse cx="89" cy="49" rx="2.6" ry="6.4" fill="#1b1726"/>
-<circle cx="63" cy="45.5" r="1.8" fill="#fff"/><circle cx="86" cy="45.5" r="1.8" fill="#fff"/>
-<path d="M73.5 59 h7 l-3.5 4.2z" fill="#ff7aa8"/>
-<path d="M77 63 q-4 6 -9 2 M77 63 q4 6 9 2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-<path d="M74 67 q3 7 6 0z" fill="#ff7aa8"/>
-<path d="M60 60 l-12 -2 M60 64 l-12 3 M94 60 l12 -2 M94 64 l12 3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".8"/>
-<path d="M57 74 q20 11 40 0" stroke="#ff4d6d" stroke-width="6" fill="none" stroke-linecap="round"/>
-<circle cx="77" cy="82" r="5.5" fill="#ffc93c"/><circle cx="77" cy="83.5" r="1.6" fill="#1b1726"/>
-</svg>`;
+/* ElGatoLoco art: assets/cat_<pose>.webp (wave, cheer, sit, walk, fly) */
+const pic = (name, alt = '') => `<img class="pic" src="assets/${name}.webp" alt="${alt}" draggable="false">`;
+const stickerPic = (w, i) => pic(`st_${w.id}_${i}`, w.stickers[i]);
+const cat = pose => `<img class="catimg" src="assets/cat_${pose}.webp" alt="" draggable="false">`;
 
 /* ---------- sound ---------- */
 let ac;
@@ -451,7 +437,7 @@ function show(v) {
 }
 function vTitle() {
   app.innerHTML = `<div class="title">
-    <button class="cat" data-act="pet" aria-label="ElGatoLoco">${CAT}</button>
+    <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button>
     <h1>ElGatoLoco<small>${T('sub')}</small></h1>
     <p class="story">${T('story')}</p>
     <div class="pick"><span class="label">${T('language')}</span>${langSeg()}</div>
@@ -473,16 +459,16 @@ function vMap() {
       }
       body += '</div>';
     }
-    return `<section class="world w-${w.id}${w.night ? ' night' : ''}"><div class="head"><span class="em">${w.em}</span><div><h3>${T('w_' + w.id)}</h3><p class="sub">${T('s_' + w.id)}</p></div></div>${body}</section>`;
+    return `<section class="world w-${w.id}${w.night ? ' night' : ''}"><div class="head"><span class="em">${pic('ic_' + w.id, w.em)}</span><div><h3>${T('w_' + w.id)}</h3><p class="sub">${T('s_' + w.id)}</p></div></div>${body}</section>`;
   }).join('');
   app.innerHTML = `<div class="map">
-    <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${CAT}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
+    <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
       <button class="icon-btn" data-act="go" data-v="album" aria-label="${T('album')}">📒</button>
       <button class="icon-btn" data-act="go" data-v="settings" aria-label="${T('settings')}">⚙️</button></header>
     <div class="worlds">${cards}</div></div>`;
 }
 function vAlbum() {
-  const cells = WORLDS.flatMap(w => w.stickers.map((s, i) => (S.stickers.includes(w.id + '-' + i) ? `<div class="sticker">${s}</div>` : `<div class="sticker off">?</div>`))).join('');
+  const cells = WORLDS.flatMap(w => w.stickers.map((s, i) => (S.stickers.includes(w.id + '-' + i) ? `<div class="sticker">${stickerPic(w, i)}</div>` : `<div class="sticker off">?</div>`))).join('');
   app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('album')}</h2><span class="pill">${S.stickers.length} / ${WORLDS.length * PER_WORLD}</span></header>
     <div class="body"><p class="note">${T('albumNote')}</p><div class="album">${cells}</div></div></div>`;
 }
@@ -537,11 +523,8 @@ function startLevel(world, idx) {
     <header class="topbar" style="padding-bottom:0"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button>
       <div class="steps">${'<i>★</i>'.repeat(STEPS)}</div>
       <button class="icon-btn" data-act="mute" aria-label="${T('sound')}">${S.sound ? '🔊' : '🔇'}</button></header>
-    <div class="scene"><div class="sun"></div>
-      <div class="strip far"><div class="run">${(w.far + w.far)}</div></div>
-      <div class="ground"></div>
-      <div class="strip near"><div class="run">${(w.near + w.near)}</div></div>
-      <div class="hero">${CAT}</div><div class="obst"></div><div class="toast"></div></div>
+    <div class="scene"><div class="bg"></div>
+      <div class="hero">${cat('walk')}</div><div class="obst"></div><div class="toast"></div></div>
     <div class="panel" id="panel"></div></div>`;
   walk();
 }
@@ -550,7 +533,7 @@ function walk() {
   $('.level').classList.remove('arcade');
   p.innerHTML = ''; p.className = 'panel';
   ob.style.transition = 'none'; ob.className = 'obst';
-  ob.textContent = last ? '🎁' : st.k === 'break' ? '' : cur.w.obst[cur.step % cur.w.obst.length];
+  ob.innerHTML = last ? pic('ob_gift', '🎁') : st.k === 'break' ? '' : pic(`ob_${cur.w.id}_${cur.step % cur.w.obst.length}`, cur.w.obst[cur.step % cur.w.obst.length]);
   void ob.offsetWidth; ob.style.transition = '';
   scene.classList.add('walking'); ob.classList.add('in');
   later(st && st.k === 'break' ? 800 : 1450, () => {
@@ -614,7 +597,7 @@ function playSeq() {
 /* high five after a stage with no mistakes */
 function hi5() {
   const p = $('#panel'), id = ++cur.hiId; cur.hi = id;
-  p.innerHTML = `<p class="q">${T('hi5')}</p><div class="hi5"><div class="cat">${CAT}</div><button class="paw" data-act="hi5" aria-label="${T('hi5')}">🐾</button></div>`;
+  p.innerHTML = `<p class="q">${T('hi5')}</p><div class="hi5"><div class="cat">${cat('wave')}</div><button class="paw" data-act="hi5" aria-label="${T('hi5')}">${pic('paw', '🐾')}</button></div>`;
   p.className = 'panel show'; sfx('meow');
   later(6000, () => { if (cur.hi === id) { cur.hi = 0; walk(); } });
 }
@@ -623,7 +606,7 @@ function hi5() {
 function petBreak(mode) {
   const p = $('#panel'), need = 2400;
   let dist = 0, lx = null, ly = 0, lastFx = 0, done = false, tmr;
-  p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${CAT}</div></div><div class="meter"><i></i></div>`;
+  p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${cat('sit')}</div></div><div class="meter"><i></i></div>`;
   p.className = 'panel show'; sfx('meow');
   const z = $('.petzone'), bar = $('.meter i'), cat = z.firstChild;
   const mv = e => {
@@ -673,8 +656,8 @@ function paintPz() {
 }
 
 /* action games on canvas: every target is an answer to the question above */
-const catImg = new Image();
-catImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(CAT.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" '));
+const loadImg = n => { const i = new Image(); i.src = `assets/${n}.webp`; return i; };
+const catSit = loadImg('cat_sit'), catFly = loadImg('cat_fly'), yarnImg = loadImg('yarn');
 function arcade(kind) {
   const tok = cur, p = $('#panel');
   $('.level').classList.add('arcade');
@@ -685,6 +668,8 @@ function arcade(kind) {
   const need = kind === 'sling' ? 2 : 3, fx = [], FONT = '"Baloo 2", Nunito, system-ui, sans-serif';
   const fit = () => { Wd = cv.clientWidth; Ht = cv.clientHeight; cv.width = Wd * dpr; cv.height = Ht * dpr; };
   fit();
+  // draw an image h pixels tall, centred on x; y is its centre, or its bottom edge when `bottom` is set
+  const drawFit = (img, x, y, h, bottom) => { if (!img.naturalWidth) return; const w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, x - w / 2, bottom ? y - h : y - h / 2, w, h); };
   const burst = (x, y, e) => { for (let i = 0; i < 10; i++) { const a = Math.random() * 6.28, s = 80 + Math.random() * 170; fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 90, life: 0.8, t: e || pick(['⭐', '✨', '💜']) }); } };
   const mk = (label, i) => {
     let fs = [...label].length <= 3 ? 34 : 22, tw;
@@ -695,7 +680,9 @@ function arcade(kind) {
   const pill = (t, ring) => {
     const x = t.x - t.w / 2, y = t.y - t.h / 2, r = t.h / 2;
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + t.w, y, x + t.w, y + t.h, r); ctx.arcTo(x + t.w, y + t.h, x, y + t.h, r); ctx.arcTo(x, y + t.h, x, y, r); ctx.arcTo(x, y, x + t.w, y, r); ctx.closePath();
-    ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = ring; ctx.stroke();
+    const gr = ctx.createLinearGradient(0, y, 0, y + t.h); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#e9edff');
+    ctx.save(); ctx.shadowColor = 'rgba(29,43,83,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4; ctx.fillStyle = gr; ctx.fill(); ctx.restore();
+    ctx.lineWidth = 5; ctx.strokeStyle = ring; ctx.stroke();
     ctx.fillStyle = '#1d2b53'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 ${t.fs}px ${FONT}`; ctx.fillText(t.label, t.x, t.y + t.fs * 0.07);
   };
   const RING = ['#ff6b6b', '#3d8bfd', '#2fbf71', '#f5a524'];
@@ -751,7 +738,7 @@ function arcade(kind) {
         draw() {
           const a = A(), gy = Ht - 26;
           ctx.fillStyle = '#bfe8c9'; ctx.fillRect(0, gy, Wd, 26);
-          ctx.drawImage(catImg, a.x - 84, gy - 70, 74, 74);
+          drawFit(catSit, Math.max(30, a.x - 50), gy + 6, 72, true);
           ctx.lineCap = 'round'; ctx.strokeStyle = '#8a5a3c'; ctx.lineWidth = 7;
           ctx.beginPath(); ctx.moveTo(a.x, gy); ctx.lineTo(a.x, a.y + 20); ctx.lineTo(a.x - 15, a.y - 4); ctx.moveTo(a.x, a.y + 20); ctx.lineTo(a.x + 15, a.y - 4); ctx.stroke();
           if (drag) {
@@ -762,7 +749,7 @@ function arcade(kind) {
             for (let i = 0; i < (S.age === 2 ? 9 : 18); i++) { for (let k = 0; k < 3; k++) { vy += GR * 0.016; px += vx * 0.016; py += vy * 0.016; } ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill(); }
           }
           tg.forEach((t, k) => { if (t.alive) pill(t, RING[k % 4]); });
-          ctx.font = '30px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🧶', ball.x, ball.y);
+          drawFit(yarnImg, ball.x, ball.y, 38);
         },
       };
     },
@@ -790,11 +777,11 @@ function arcade(kind) {
           if (col.x < -col.mw) col.x = Wd + col.mw / 2 + 20;
         },
         draw() {
-          ctx.font = '34px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = 0.7;
-          clouds.forEach(c => ctx.fillText('☁️', c.x, c.y)); ctx.globalAlpha = 1;
+          ctx.fillStyle = 'rgba(255,255,255,.85)';
+          clouds.forEach(c => { ctx.beginPath(); for (const [dx, dy, r] of [[-20, 4, 13], [-4, -5, 18], [15, 2, 14], [0, 8, 14]]) { ctx.moveTo(c.x + dx + r, c.y + dy); ctx.arc(c.x + dx, c.y + dy, r, 0, 7); } ctx.fill(); });
           if (col) col.it.forEach((t, k) => { if (t.alive) pill(t, RING[k % 4]); });
           ctx.save(); ctx.translate(Wd * 0.22, cy); ctx.rotate(Math.max(-0.45, Math.min(0.6, vy / 700)));
-          ctx.drawImage(catImg, -36, -40, 72, 72); ctx.restore();
+          drawFit(catFly, 0, 0, 60); ctx.restore();
         },
       };
     },
@@ -877,9 +864,9 @@ function finish() {
   const canNext = idx + 1 < PER_WORLD;
   cur = null; view = 'done';
   app.innerHTML = `<div class="done">
-    <button class="cat" data-act="pet" aria-label="ElGatoLoco">${CAT}</button><h2>${T('done' + stars)}</h2>
+    <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('cheer')}</button><h2>${T('done' + stars)}</h2>
     <div class="stars3">${[1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>
-    ${isNew ? `<div class="sticker new">${w.stickers[idx]}</div><p class="label">${T('newSticker')}</p>` : ''}
+    ${isNew ? `<div class="sticker new">${stickerPic(w, idx)}</div><p class="label">${T('newSticker')}</p>` : ''}
     <div class="row">
       ${canNext ? `<button class="btn" data-act="level" data-w="${world}" data-i="${idx + 1}">${T('next')} ▶</button>` : ''}
       ${stars < 3 ? `<button class="btn alt" data-act="level" data-w="${world}" data-i="${idx}">${T('again')}</button>` : ''}
