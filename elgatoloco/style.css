@@ -231,3 +231,50 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ElGatoLoco: black cat needs a light outline on dark scenes */
+.cat { position: relative; display: block; }
+.cat svg, .hero svg { filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff); }
+.cat.mini { width: 50px; height: 50px; flex: none; }
+.cat.boing { animation: hop .5s ease-out; }
+.title h1 { font-size: 3.1rem; }
+.fem { position: absolute; font-size: 1.8rem; line-height: 1; pointer-events: none; z-index: 5; animation: floatup .9s ease-out forwards; }
+
+/* action games */
+.level.arcade .scene { display: none; }
+.panel.arc { padding: 10px; gap: 6px; overflow: hidden; }
+.abar { flex: none; height: 128px; display: flex; flex-direction: column; justify-content: center; gap: 2px; overflow: hidden; }
+.abar .q { font-size: 1.12rem; }
+.abar .hintline { font-size: .82rem; min-height: 0; }
+.stim.mini { flex: none; min-height: 0; gap: 2px 8px; }
+.stim.mini .big { font-size: 2.5rem; }
+.stim.mini .mid { font-size: 1.5rem; }
+.stim.mini .sm { font-size: 1.1rem; }
+.stim.mini .expr, .stim.mini .word { font-size: 1.9rem; }
+.stim.mini .say { width: 32px; height: 32px; font-size: 1rem; }
+.cv { flex: 1; min-height: 0; width: 100%; display: block; touch-action: none; border-radius: 18px; background: linear-gradient(#dff1ff, #f3edff); }
+
+/* high five, tickle and cuddle */
+.hi5 { flex: 1; min-height: 210px; position: relative; display: grid; place-items: center; }
+.hi5 .cat { width: 180px; height: 180px; margin-right: 70px; }
+.paw { position: absolute; left: calc(50% + 28px); top: 12%; width: 108px; height: 108px; border-radius: 50%; background: #ff8fb8; box-shadow: 0 6px 0 #d95f8c; font-size: 3.3rem; line-height: 1; animation: pawpulse .45s ease-in-out infinite alternate; }
+.paw.hit { animation: pop .3s; background: var(--sun); box-shadow: 0 6px 0 var(--sun-deep); }
+.petzone { flex: 1; min-height: 220px; position: relative; display: grid; place-items: center; touch-action: none; border-radius: 20px; background: radial-gradient(circle, #fff1b8, rgba(255, 241, 184, 0) 70%); overflow: hidden; }
+.petzone .cat { width: 220px; height: 220px; pointer-events: none; }
+.petzone.tickle .cat.wig { animation: wig .16s linear infinite; }
+.petzone.pet .cat.wig { animation: purr .45s ease-in-out infinite alternate; }
+.meter { flex: none; height: 16px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--coral); border-radius: 99px; transition: width .15s; }
+
+/* picture puzzle */
+.pzwrap { flex: 1; display: grid; place-items: center; min-height: 0; }
+.pz { display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(var(--rows), 1fr); gap: 4px; width: 100%; max-width: 380px; max-height: 100%; transition: gap .3s; }
+.ptile { background-image: var(--img); background-size: calc(var(--cols) * 100%) calc(var(--rows) * 100%); border-radius: 10px; box-shadow: 0 3px 0 var(--line); transition: transform .12s; }
+.ptile.sel { outline: 4px solid var(--grape); outline-offset: -2px; transform: scale(.92); }
+.pz.solved { gap: 0; }
+.pz.solved .ptile { border-radius: 0; box-shadow: none; }
+
+@keyframes floatup { from { opacity: 1; transform: translateY(0) scale(.8); } to { opacity: 0; transform: translateY(-70px) scale(1.4); } }
+@keyframes pawpulse { to { transform: scale(1.12) rotate(8deg); } }
+@keyframes wig { 0% { transform: rotate(-7deg) translateX(-4px); } 50% { transform: rotate(7deg) translateX(4px); } 100% { transform: rotate(-7deg) translateX(-4px); } }
+@keyframes purr { to { transform: scale(1.06, .95); } }
