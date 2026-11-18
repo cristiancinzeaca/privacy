@@ -608,17 +608,17 @@ function petBreak(mode) {
   let dist = 0, lx = null, ly = 0, lastFx = 0, done = false, tmr;
   p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}"><div class="cat">${cat('sit')}</div></div><div class="meter"><i></i></div>`;
   p.className = 'panel show'; sfx('meow');
-  const z = $('.petzone'), bar = $('.meter i'), cat = z.firstChild;
+  const z = $('.petzone'), bar = $('.meter i'), kitty = z.firstChild;
   const mv = e => {
     if (done || !cur) return;
     const r = z.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (lx !== null) dist += Math.hypot(x - lx, y - ly);
     lx = x; ly = y;
-    cat.classList.add('wig'); clearTimeout(tmr); tmr = setTimeout(() => cat.classList.remove('wig'), 220);
+    kitty.classList.add('wig'); clearTimeout(tmr); tmr = setTimeout(() => kitty.classList.remove('wig'), 220);
     bar.style.width = Math.min(100, dist / need * 100) + '%';
     const now = performance.now();
     if (now - lastFx > 260) { lastFx = now; floatEm(z, pick(mode === 'tickle' ? ['😹', '😆', '✨'] : ['💗', '💜', '😻']), x, y); sfx(mode === 'tickle' ? 'giggle' : 'purr'); }
-    if (dist >= need) { done = true; sfx('meow'); cat.classList.remove('wig'); cat.classList.add('boing'); cur.pos++; later(1000, walk); }
+    if (dist >= need) { done = true; sfx('meow'); kitty.classList.remove('wig'); kitty.classList.add('boing'); cur.pos++; later(1000, walk); }
   };
   z.addEventListener('pointerdown', e => { lx = null; try { z.setPointerCapture(e.pointerId); } catch (_) {} mv(e); });
   z.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') mv(e); });
