@@ -331,3 +331,24 @@ p { margin: 0; }
 @keyframes ringpulse { from { transform: translate(-50%, -50%) scale(.92); opacity: .95; } to { transform: translate(-50%, -50%) scale(1.08); opacity: .55; } }
 @keyframes slap { 0% { transform: scale(1.04); } 30% { transform: scale(1.24) rotate(-4deg); } 100% { transform: scale(1.05); } }
 @keyframes ringout { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.9); opacity: 0; } }
+
+/* free play: the long cat (snake) */
+.playcard { flex: none; display: flex; align-items: center; gap: 12px; text-align: left; border-radius: 26px; padding: 12px 16px; color: #fff; background: linear-gradient(120deg, var(--grape), #ff7aa8); box-shadow: 0 6px 0 var(--grape-deep); }
+.playcard:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--grape-deep); }
+.playcard .pc-ic { width: 62px; height: 62px; flex: none; }
+.playcard .pc-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.playcard b { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; }
+.playcard small { font-weight: 700; font-size: .9rem; opacity: .92; }
+.playcard .pc-go { font-size: 1.6rem; }
+.page.snake { gap: 8px; padding-bottom: 12px; }
+.pill.alt { background: var(--sun); color: var(--ink); }
+.sn-bonus { flex: none; min-height: 60px; border-radius: 18px; background: var(--card); box-shadow: 0 4px 0 var(--line); padding: 6px 12px; display: flex; align-items: center; justify-content: center; gap: 4px 10px; flex-wrap: wrap; text-align: center; }
+.sn-bonus:empty { visibility: hidden; }
+.sn-bonus .sn-q { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.sn-bonus .chip { background: var(--sun); color: var(--ink); }
+.sn-wrap { flex: 1; min-height: 0; position: relative; border-radius: 22px; overflow: hidden; background: #b9dfab; touch-action: none; }
+.sn-cv { width: 100%; height: 100%; display: block; touch-action: none; }
+.sn-over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(230, 235, 255, .9); text-align: center; animation: rise .3s ease-out; }
+.sn-over[hidden] { display: none; }
+.sn-over h2 { font-size: 2.8rem; color: var(--grape); }
+.sn-over .sn-head { width: 110px; height: 110px; animation: hop .7s ease-out 2; }

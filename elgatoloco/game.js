@@ -12,7 +12,7 @@ const LANGS = ['ro', 'es', 'en'];
 
 /* ---------- state ---------- */
 const KEY = 'elgatoloco-v1';
-const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {} };
+const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {} };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
@@ -23,6 +23,12 @@ if (!S.setup) {
 
 /* ---------- text ---------- */
 const STR = {
+  snake: ['Pisica lungă', 'El gato largo', 'Long cat'],
+  snakeSub: ['Joacă liber: prinde pești și crește!', 'Juego libre: ¡atrapa peces y crece!', 'Free play: catch fish and grow!'],
+  snakeHint: ['Glisează ca să schimbi direcția', 'Desliza para cambiar de dirección', 'Swipe to change direction'],
+  bonus: ['Bonus', 'Bonus', 'Bonus'],
+  record: ['Record', 'Récord', 'Best'],
+  newRecord: ['Record nou!', '¡Nuevo récord!', 'New best!'],
   sub: ['și stelele pierdute', 'y las estrellas perdidas', 'and the Lost Stars'],
   story: ['Stelele au căzut din cer pe insule. Ajută-l pe ElGatoLoco să le adune pe toate!', 'Las estrellas se han caído del cielo a las islas. ¡Ayuda a ElGatoLoco a recogerlas todas!', 'The stars have fallen from the sky onto the islands. Help ElGatoLoco collect them all!'],
   play: ['Joacă', 'Jugar', 'Play'],
@@ -474,7 +480,7 @@ const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map
 function show(v) {
   cur = null; view = v; resetArmed = false;
   hush();
-  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings })[v]();
+  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake })[v]();
 }
 function vTitle() {
   app.innerHTML = `<div class="title">
@@ -506,7 +512,7 @@ function vMap() {
     <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
       <button class="icon-btn" data-act="go" data-v="album" aria-label="${T('album')}">📒</button>
       <button class="icon-btn" data-act="go" data-v="settings" aria-label="${T('settings')}">⚙️</button></header>
-    <div class="worlds">${cards}</div></div>`;
+    <div class="worlds"><button class="playcard" data-act="go" data-v="snake"><span class="pc-ic">${pic('cat_head')}</span><span class="pc-tx"><b>${T('snake')}</b><small>${T('snakeSub')}</small></span><span class="pc-go">▶</span></button>${cards}</div></div>`;
 }
 function vAlbum() {
   const cells = WORLDS.flatMap(w => w.stickers.map((s, i) => (S.stickers.includes(w.id + '-' + i) ? `<div class="sticker">${stickerPic(w, i)}</div>` : `<div class="sticker off">?</div>`))).join('');
@@ -918,6 +924,155 @@ function finish() {
       <button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button>
     </div></div>`;
 }
+
+/* ---------- free play: the long cat (a snake game; questions are an optional bonus) ---------- */
+const headImg = loadImg('cat_head'), fishImg = loadImg('fish');
+let snakeTurn = null;
+// a question whose answers are short enough to sit on one square of the board
+function bonusQ() {
+  const kinds = [['firstLetter', 'missingLetter', 'wordPic'], ['count', 'add', 'sub', 'nextNum', 'biggest', 'missNum'], ['pattern', 'odd']];
+  for (let k = 0; k < 14; k++) {
+    let c;
+    try { c = G[pick(pick(kinds))](S.age, 2); } catch (e) { continue; }
+    if (!c || c.type !== 'choice' || !c.opts) continue;
+    const opts = c.opts.map(plain);
+    if (opts.some(o => [...o].length > 3)) continue;
+    let ids = opts.map((_, i) => i);
+    if (ids.length > 3) ids = shuffle([c.ans, ...sample(ids.filter(i => i !== c.ans), 2)]);
+    return { q: plain(c.q), stim: c.stim || '', opts: ids.map(i => opts[i]), ans: ids.indexOf(c.ans) };
+  }
+  return null;
+}
+function vSnake() {
+  const tok = {}, easy = S.age === 0, best0 = S.best.snake || 0;
+  app.innerHTML = `<div class="page snake">
+    <header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button>
+      <span class="pill" id="sn-score">🐟 0</span><span class="grow"></span><span class="pill alt" id="sn-best">🏆 ${best0}</span></header>
+    <div class="sn-bonus" id="sn-bonus"></div>
+    <div class="sn-wrap"><canvas class="sn-cv"></canvas><div class="sn-over" id="sn-over" hidden></div></div>
+    <p class="hintline">${T('snakeHint')}</p></div>`;
+  const cv = app.querySelector('.sn-cv'), ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const banner = app.querySelector('#sn-bonus'), FONT = '"Baloo 2", Nunito, system-ui, sans-serif';
+  const COLS = easy ? 9 : 11;
+  let Wd = cv.clientWidth, Ht = cv.clientHeight, cell = Math.floor(Wd / COLS), ROWS = Math.max(8, Math.floor(Ht / cell));
+  if (ROWS * cell > Ht) cell = Math.floor(Ht / ROWS);
+  const ox = Math.floor((Wd - COLS * cell) / 2), oy = Math.floor((Ht - ROWS * cell) / 2);
+  cv.width = Wd * dpr; cv.height = Ht * dpr;
+  const cy0 = Math.floor(ROWS / 2);
+  let body = [{ x: 4, y: cy0 }, { x: 3, y: cy0 }, { x: 2, y: cy0 }], prev = body.map(b => ({ ...b }));
+  let dir = { x: 1, y: 0 }, queue = [], food = null, bonus = null, score = 0, eaten = 0, alive = true, started = false;
+  let stepMs = easy ? 300 : S.age === 1 ? 230 : 190, acc = 0, last = performance.now(), time = 0, pops = [];
+  const taken = (x, y) => body.some(b => b.x === x && b.y === y) || (food && food.x === x && food.y === y) || (bonus && bonus.tokens.some(t => t.x === x && t.y === y));
+  const spot = () => { for (let k = 0; k < 400; k++) { const x = rnd(COLS), y = rnd(ROWS); if (!taken(x, y) && Math.abs(x - body[0].x) + Math.abs(y - body[0].y) > 2) return { x, y }; } return { x: 0, y: 0 }; };
+  food = spot();
+  const px = c => ox + (c + 0.5) * cell, py = c => oy + (c + 0.5) * cell;
+  const setScore = () => { app.querySelector('#sn-score').textContent = '🐟 ' + score; };
+  function endBonus() { bonus = null; banner.innerHTML = ''; }
+  function startBonus() {
+    const q = bonusQ(); if (!q) return;
+    bonus = { q, tokens: [], until: time + 16 };
+    q.opts.forEach((label, i) => { const s = spot(); bonus.tokens.push({ ...s, label, ok: i === q.ans }); });
+    banner.innerHTML = `<b class="chip">⭐ ${T('bonus')} +5</b><span class="sn-q">${q.q}</span>${q.stim ? `<span class="stim mini">${q.stim}</span>` : ''}`;
+    say(q.q, S.lang);
+  }
+  function die() {
+    alive = false; sfx('bad'); hush();
+    const rec = score > best0;
+    if (rec) { S.best.snake = score; save(); app.querySelector('#sn-best').textContent = '🏆 ' + score; }
+    const o = app.querySelector('#sn-over');
+    o.innerHTML = `<div class="sn-head">${pic('cat_head')}</div><h2>🐟 ${score}</h2><p class="label">${rec ? T('newRecord') : T('record') + ': ' + best0}</p>
+      <button class="btn" data-act="go" data-v="snake">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button>`;
+    o.hidden = false; if (rec) sfx('win');
+  }
+  function step() {
+    while (queue.length) { const d = queue.shift(); if (d.x !== -dir.x || d.y !== -dir.y) { dir = d; break; } }
+    let nx = body[0].x + dir.x, ny = body[0].y + dir.y;
+    if (easy) { nx = (nx + COLS) % COLS; ny = (ny + ROWS) % ROWS; }   // the youngest players pass through the walls
+    else if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) return die();
+    if (body.slice(0, -1).some(b => b.x === nx && b.y === ny)) return die();
+    prev = body.map(b => ({ ...b }));
+    body.unshift({ x: nx, y: ny });
+    if (food.x === nx && food.y === ny) {
+      score++; eaten++; setScore(); sfx('tap'); pops.push({ x: px(nx), y: py(ny), t: '+1', life: 0.7 });
+      prev.push({ ...prev[prev.length - 1] });
+      food = spot(); stepMs = Math.max(easy ? 190 : 120, stepMs - 4);
+      if (eaten % 5 === 0 && !bonus) startBonus();
+    } else body.pop();
+    if (bonus) {
+      const t = bonus.tokens.find(k => k.x === nx && k.y === ny);
+      if (t) {
+        if (t.ok) { score += 5; setScore(); sfx('good'); pops.push({ x: px(nx), y: py(ny), t: '⭐ +5', life: 1 }); }
+        else { sfx('whoosh'); pops.push({ x: px(nx), y: py(ny), t: '💨', life: 0.7 }); }
+        endBonus();
+      } else if (time > bonus.until) endBonus();
+    }
+  }
+  function draw(k) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, Wd, Ht);
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { ctx.fillStyle = (x + y) % 2 ? '#c4e8b6' : '#d3f0c6'; ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // food
+    const bob = Math.sin(time * 5) * cell * 0.05, fw = cell * 0.95;
+    if (fishImg.naturalWidth) ctx.drawImage(fishImg, px(food.x) - fw / 2, py(food.y) - fw * fishImg.naturalHeight / fishImg.naturalWidth / 2 + bob, fw, fw * fishImg.naturalHeight / fishImg.naturalWidth);
+    else { ctx.font = `${cell * 0.7}px sans-serif`; ctx.fillText('🐟', px(food.x), py(food.y)); }
+    // bonus answers
+    if (bonus) bonus.tokens.forEach((t, i) => {
+      const r = cell * 0.46 * (1 + Math.sin(time * 4 + i) * 0.04);
+      ctx.beginPath(); ctx.arc(px(t.x), py(t.y), r, 0, 7); ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = ['#ff6b6b', '#3d8bfd', '#f5a524'][i % 3]; ctx.stroke();
+      let fs = cell * 0.5; ctx.font = `800 ${fs}px ${FONT}`;
+      while (ctx.measureText(t.label).width > cell * 0.72 && fs > 9) { fs -= 1; ctx.font = `800 ${fs}px ${FONT}`; }
+      ctx.fillStyle = '#1d2b53'; ctx.fillText(t.label, px(t.x), py(t.y) + fs * 0.06);
+    });
+    // the cat: tail first, head last; each piece slides from its old square to the new one
+    const at = i => {
+      const a = prev[Math.min(i, prev.length - 1)], b = body[i];
+      return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) > 1 ? { x: px(b.x), y: py(b.y) } : { x: px(a.x + (b.x - a.x) * k), y: py(a.y + (b.y - a.y) * k) };
+    };
+    const pts = body.map((_, i) => at(i));
+    for (let i = pts.length - 1; i >= 1; i--) {
+      const r = cell * (i === pts.length - 1 ? 0.3 : i === pts.length - 2 ? 0.38 : 0.44), a = pts[i], b = pts[i - 1];
+      ctx.fillStyle = i % 4 === 2 ? '#2a2340' : '#1b1726';
+      ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, 7); ctx.fill();
+      if (Math.hypot(a.x - b.x, a.y - b.y) < cell * 1.5) { ctx.beginPath(); ctx.arc((a.x + b.x) / 2, (a.y + b.y) / 2, r, 0, 7); ctx.fill(); }
+    }
+    const h = pts[0], hs = cell * 1.5;
+    if (headImg.naturalWidth) ctx.drawImage(headImg, h.x - hs / 2, h.y - hs / 2, hs, hs * headImg.naturalHeight / headImg.naturalWidth);
+    else { ctx.fillStyle = '#1b1726'; ctx.beginPath(); ctx.arc(h.x, h.y, cell * 0.55, 0, 7); ctx.fill(); }
+    // floating score pops
+    ctx.font = `800 ${cell * 0.5}px ${FONT}`; ctx.fillStyle = '#5a3fd6';
+    pops.forEach(p => { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillText(p.t, p.x, p.y - (1 - p.life) * cell); });
+    ctx.globalAlpha = 1;
+  }
+  function frame(now) {
+    if (view !== 'snake' || !cv.isConnected) { if (snakeTurn === turn) snakeTurn = null; return; }
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; time += dt;
+    pops = pops.filter(p => (p.life -= dt) > 0);
+    if (alive && started) { acc += dt * 1000; while (acc >= stepMs && alive) { acc -= stepMs; step(); } }
+    draw(alive && started ? Math.min(1, acc / stepMs) : 1);
+    requestAnimationFrame(frame);
+  }
+  const turn = (x, y) => { if (!alive) return; started = true; const l = queue[queue.length - 1] || dir; if ((l.x !== x || l.y !== y) && queue.length < 3) queue.push({ x, y }); };
+  snakeTurn = turn;
+  window.__chispa.snake = () => ({ head: body[0], dir, food, bonus, score, alive, length: body.length, cols: COLS, rows: ROWS });   // for automated play-tests
+  let sp = null;
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); sp = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} started = true; });
+  cv.addEventListener('pointermove', e => {
+    if (!sp) return;
+    const dx = e.clientX - sp.x, dy = e.clientY - sp.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
+    if (Math.abs(dx) > Math.abs(dy)) turn(Math.sign(dx), 0); else turn(0, Math.sign(dy));
+    sp = { x: e.clientX, y: e.clientY };
+  });
+  const lift = () => { sp = null; };
+  cv.addEventListener('pointerup', lift); cv.addEventListener('pointercancel', lift);
+  sfx('meow');
+  requestAnimationFrame(frame);
+}
+document.addEventListener('keydown', e => {
+  const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+  if (d && snakeTurn && view === 'snake') { e.preventDefault(); snakeTurn(d[0], d[1]); }
+});
 
 /* ---------- input ---------- */
 const ACT = {
