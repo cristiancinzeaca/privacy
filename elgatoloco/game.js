@@ -12,7 +12,7 @@ const LANGS = ['ro', 'es', 'en'];
 
 /* ---------- state ---------- */
 const KEY = 'elgatoloco-v1';
-const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true };
+const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true, stat: { plays: 0, smart: 0, daily: 0 }, daily: null };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
@@ -23,6 +23,30 @@ if (!S.setup) {
 
 /* ---------- text ---------- */
 const STR = {
+  games: ['Jocuri', 'Juegos', 'Games'],
+  adventure: ['Aventura', 'Aventura', 'Adventure'],
+  g_snake: ['Pisica lungă', 'El gato largo', 'Long cat'],
+  g_run: ['Fuga pisicii', 'La carrera del gato', 'Cat dash'],
+  g_catch: ['Ploaia de pești', 'Lluvia de peces', 'Fish rain'],
+  g_whack: ['Prinde șoarecii', 'Atrapa ratones', 'Catch the mice'],
+  g_memory: ['Perechi', 'Parejas', 'Pairs'],
+  g_fly: ['Zbor printre nori', 'Vuelo entre nubes', 'Cloud flight'],
+  runHint: ['Atinge ca să sari. Atinge de două ori pentru salt dublu!', 'Toca para saltar. ¡Toca dos veces para un salto doble!', 'Tap to jump. Tap twice for a double jump!'],
+  catchHint: ['Mișcă pisicul și prinde peștii. Ferește-te de apă!', 'Mueve al gato y atrapa los peces. ¡Cuidado con el agua!', 'Move the cat and catch the fish. Watch out for water!'],
+  whackHint: ['Atinge șoarecii, dar nu ariciul!', 'Toca los ratones, ¡pero no el erizo!', 'Tap the mice, but not the hedgehog!'],
+  memHint: ['Găsește perechile înainte să se termine timpul', 'Encuentra las parejas antes de que se acabe el tiempo', 'Find the pairs before time runs out'],
+  flyHint: ['Atinge ca să zbori în sus. Adună stelele și ocolește norii!', 'Toca para subir. ¡Recoge las estrellas y esquiva las nubes!', 'Tap to fly up. Collect the stars and dodge the clouds!'],
+  chance: ['A doua șansă! Răspunde corect și mergi mai departe', '¡Segunda oportunidad! Responde bien y sigue jugando', 'Second chance! Answer right and keep playing'],
+  skip: ['Nu, mulțumesc', 'No, gracias', 'No, thanks'],
+  daily: ['Provocarea zilei', 'Reto del día', 'Daily challenge'],
+  dailyDone: ['Provocarea zilei, reușită!', '¡Reto del día conseguido!', 'Daily challenge done!'],
+  newTrophy: ['Trofeu nou!', '¡Trofeo nuevo!', 'New trophy!'],
+  quests: ['Provocări', 'Retos', 'Challenges'],
+  q_plays: ['Jocuri jucate', 'Partidas jugadas', 'Games played'],
+  q_stars: ['Stele din aventură', 'Estrellas de la aventura', 'Adventure stars'],
+  q_stickers: ['Autocolante adunate', 'Pegatinas reunidas', 'Stickers collected'],
+  q_smart: ['A doua șansă câștigată', 'Segundas oportunidades ganadas', 'Second chances won'],
+  q_daily: ['Provocări zilnice reușite', 'Retos diarios conseguidos', 'Daily challenges done'],
   vibe: ['Vibrații', 'Vibración', 'Vibration'],
   snake: ['Pisica lungă', 'El gato largo', 'Long cat'],
   snakeSub: ['Joacă liber: prinde pești și crește!', 'Juego libre: ¡atrapa peces y crece!', 'Free play: catch fish and grow!'],
@@ -520,7 +544,7 @@ const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map
 function show(v) {
   cur = null; view = v; resetArmed = false;
   hush();
-  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake })[v]();
+  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly })[v]();
 }
 function vTitle() {
   app.innerHTML = `<div class="title">
@@ -548,11 +572,16 @@ function vMap() {
     }
     return `<section class="world w-${w.id}${w.night ? ' night' : ''}"><div class="head"><span class="em">${pic('ic_' + w.id, w.em)}</span><div><h3>${T('w_' + w.id)}</h3><p class="sub">${T('s_' + w.id)}</p></div></div>${body}</section>`;
   }).join('');
+  const dl = daily();
+  const games = `<section class="games"><div class="g-headline"><h3>${T('games')}</h3><button class="pill alt" data-act="go" data-v="quests" aria-label="${T('quests')}">🏆 ${trophies()} / ${QUESTS.length * 3}</button></div>
+      <button class="daily${dl.done ? ' done' : ''}" data-act="go" data-v="${dl.id}"><span class="d-ic">${pic(dl.ic)}</span><span class="pc-tx"><b>${T('daily')}</b><small>${T('g_' + dl.id)}: ${dl.unit} ${dl.need}</small></span><span class="pc-go">${dl.done ? '✅' : '▶'}</span></button>
+      <div class="g-grid">${GAMES.map(([id, ic]) => `<button class="g-tile" data-act="go" data-v="${id}"><span class="g-ic">${pic(ic)}</span><b>${T('g_' + id)}</b><small>🏆 ${S.best[id] || 0}</small></button>`).join('')}</div>
+      <button class="btn alt" data-act="go" data-v="quests">🏅 ${T('quests')}</button></section><h3 class="g-sect">${T('adventure')}</h3>`;
   app.innerHTML = `<div class="map">
     <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
       <button class="icon-btn" data-act="go" data-v="album" aria-label="${T('album')}">📒</button>
       <button class="icon-btn" data-act="go" data-v="settings" aria-label="${T('settings')}">⚙️</button></header>
-    <div class="worlds"><button class="playcard" data-act="go" data-v="snake"><span class="pc-ic">${pic('cat_head')}</span><span class="pc-tx"><b>${T('snake')}</b><small>${T('snakeSub')}</small></span><span class="pc-go">▶</span></button>${cards}</div></div>`;
+    <div class="worlds">${games}${cards}</div></div>`;
 }
 function vAlbum() {
   const cells = WORLDS.flatMap(w => w.stickers.map((s, i) => (S.stickers.includes(w.id + '-' + i) ? `<div class="sticker">${stickerPic(w, i)}</div>` : `<div class="sticker off">?</div>`))).join('');
@@ -1019,12 +1048,10 @@ function vSnake() {
   }
   function die() {
     alive = false; sfx('bad'); buzz(220); hush();
-    const rec = score > best0;
-    if (rec) { S.best.snake = score; save(); app.querySelector('#sn-best').textContent = '🏆 ' + score; }
-    const o = app.querySelector('#sn-over');
-    o.innerHTML = `<div class="sn-head">${pic('cat_head')}</div><h2>🐟 ${score}</h2><p class="label">${rec ? T('newRecord') : T('record') + ': ' + best0}</p>
-      <button class="btn" data-act="go" data-v="snake">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button>`;
-    o.hidden = false; if (rec) sfx('win');
+    const r = gameEnd('snake', score), o = app.querySelector('#sn-over');
+    if (r.rec) app.querySelector('#sn-best').textContent = '🏆 ' + score;
+    o.innerHTML = overHTML('snake', '🐟', score, r);
+    o.hidden = false; if (r.rec || r.won || r.dailyWon) sfx('win');
   }
   function step() {
     while (queue.length) { const d = queue.shift(); if (d.x !== -dir.x || d.y !== -dir.y) { dir = d; break; } }
@@ -1114,7 +1141,321 @@ function vSnake() {
 document.addEventListener('keydown', e => {
   const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
   if (d && snakeTurn && view === 'snake') { e.preventDefault(); snakeTurn(d[0], d[1]); }
+  else if (gameKey && view !== 'snake' && [' ', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); gameKey(e.key); }
 });
+
+/* ---------- free play: more mini-games, challenges and trophies ---------- */
+// [view id, icon, score unit]
+const GAMES = [['snake', 'cat_head', '🐟'], ['run', 'ic_run', '⭐'], ['catch', 'ic_catch', '🐟'], ['whack', 'ic_whack', '🐭'], ['memory', 'ic_memory', '🃏'], ['fly', 'ic_fly', '⭐']];
+// [id, bronze, silver, gold]: a game id counts its best score, the others count something collected over time
+const QUESTS = [['snake', 10, 25, 50], ['run', 12, 30, 60], ['catch', 20, 45, 90], ['whack', 15, 28, 40], ['memory', 6, 12, 20], ['fly', 8, 20, 40],
+  ['plays', 5, 25, 75], ['stars', 15, 45, 90], ['stickers', 5, 15, 30], ['smart', 3, 10, 25], ['daily', 1, 5, 15]];
+const stat = () => (S.stat = S.stat || { plays: 0, smart: 0, daily: 0 });
+const questVal = id => (id === 'stars' ? totalStars() : id === 'stickers' ? S.stickers.length : id in stat() ? stat()[id] : S.best[id] || 0);
+const questTier = q => q.slice(1).filter(n => questVal(q[0]) >= n).length;
+const trophies = () => QUESTS.reduce((a, q) => a + questTier(q), 0);
+const questName = id => (GAMES.some(g => g[0] === id) ? T('g_' + id) : T('q_' + id));
+// one challenge a day: reach a score in the game of the day
+function daily() {
+  const d = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 864e5), g = GAMES[d % GAMES.length], q = QUESTS.find(x => x[0] === g[0]);
+  if (!S.daily || S.daily.day !== d) S.daily = { day: d, done: false };
+  return { id: g[0], ic: g[1], unit: g[2], need: Math.round((q[1] + q[2]) / 2), done: S.daily.done };
+}
+// book a finished game: record, play count, challenge of the day, and how many new trophies it brought
+function gameEnd(id, score) {
+  const before = trophies(), best0 = S.best[id] || 0, rec = score > best0, dl = daily();
+  if (rec) S.best[id] = score;
+  stat().plays++;
+  let dailyWon = false;
+  if (dl.id === id && !dl.done && score >= dl.need) { S.daily.done = true; stat().daily++; dailyWon = true; }
+  save();
+  return { rec, best0, won: trophies() - before, dailyWon };
+}
+const overHTML = (id, unit, score, r) => `<div class="sn-head">${pic('cat_head')}</div><h2>${unit} ${score}</h2>
+  <p class="label">${r.rec ? T('newRecord') : T('record') + ': ' + r.best0}</p>
+  ${r.dailyWon ? `<p class="g-won">🎯 ${T('dailyDone')}</p>` : ''}${r.won ? `<p class="g-won">🏆 ${T('newTrophy')}${r.won > 1 ? ' ×' + r.won : ''}</p>` : ''}
+  <button class="btn" data-act="go" data-v="${id}">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button>`;
+
+function vQuests() {
+  const dl = daily(), medals = ['🥉', '🥈', '🥇'];
+  const rows = QUESTS.map(q => {
+    const v = questVal(q[0]), tier = questTier(q), goal = q[Math.min(3, tier + 1)], g = GAMES.find(x => x[0] === q[0]);
+    return `<div class="qs-row"><span class="qs-ic">${g ? pic(g[1]) : { plays: '🎮', stars: '⭐', stickers: '📒', smart: '💡', daily: '🎯' }[q[0]]}</span>
+      <div class="qs-tx"><b>${questName(q[0])}</b><div class="qs-bar"><i style="width:${Math.min(100, Math.round(v / goal * 100))}%"></i></div><small>${Math.min(v, goal)} / ${goal}</small></div>
+      <span class="qs-med">${medals.map((m, i) => `<span class="${i < tier ? 'on' : ''}">${m}</span>`).join('')}</span></div>`;
+  }).join('');
+  app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('quests')}</h2><span class="pill alt">🏆 ${trophies()} / ${QUESTS.length * 3}</span></header>
+    <div class="body"><button class="daily${dl.done ? ' done' : ''}" data-act="go" data-v="${dl.id}"><span class="d-ic">${pic(dl.ic)}</span><span class="pc-tx"><b>${T('daily')}</b><small>${T('g_' + dl.id)}: ${dl.unit} ${dl.need}</small></span><span class="pc-go">${dl.done ? '✅' : '▶'}</span></button>
+    <div class="qs">${rows}</div></div></div>`;
+}
+
+const IMG = {}, gi = n => IMG[n] || (IMG[n] = loadImg(n)), walkAnim = loadImg('anim_walk');
+const GFONT = '"Baloo 2", Nunito, system-ui, sans-serif';
+let reviveCb = null, gameKey = null, domHit = null;
+// the frame every mini-game shares: top bar with score and record, a canvas, room for buttons, and the game-over sheet.
+// The first time a game is lost the player gets a question; a right answer lets them carry on (education as a bonus, never a gate).
+function shell(id, unit, hint) {
+  const best0 = S.best[id] || 0;
+  app.innerHTML = `<div class="page snake">
+    <header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button>
+      <span class="pill" id="g-score">${unit} 0</span><span class="pill soft" id="g-info"></span><span class="grow"></span><span class="pill alt" id="g-best">🏆 ${best0}</span></header>
+    <div class="sn-wrap g-${id}"><canvas class="sn-cv"></canvas><div class="g-dom" id="g-dom"></div><div class="sn-over" id="sn-over" hidden></div></div>
+    <p class="hintline">${hint}</p></div>`;
+  const cv = app.querySelector('.sn-cv'), ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const g = { id, cv, ctx, W: cv.clientWidth, H: cv.clientHeight, dom: app.querySelector('#g-dom'), score: 0, revived: false, over: false, t: 0, pops: [] };
+  cv.width = g.W * dpr; cv.height = g.H * dpr;
+  g.live = () => view === id && cv.isConnected;
+  g.add = n => { g.score = Math.max(0, g.score + n); app.querySelector('#g-score').textContent = unit + ' ' + g.score; };
+  g.info = s => { const e = app.querySelector('#g-info'); if (e.textContent !== s) e.textContent = s; };
+  g.pop = (x, y, t) => g.pops.push({ x, y, t, life: 0.8 });
+  g.drawPops = dt => {
+    g.pops = g.pops.filter(p => (p.life -= dt) > 0);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 26px ${GFONT}`; ctx.lineWidth = 5; ctx.strokeStyle = '#fff'; ctx.fillStyle = '#5a3fd6';
+    g.pops.forEach(p => { ctx.globalAlpha = Math.min(1, p.life * 2.5); const y = p.y - (0.8 - p.life) * 60; ctx.strokeText(p.t, p.x, y); ctx.fillText(p.t, p.x, y); });
+    ctx.globalAlpha = 1;
+  };
+  g.end = resume => {
+    if (g.over) return;
+    g.over = true; sfx('bad'); buzz(220);
+    const o = app.querySelector('#sn-over'), q = !g.revived && resume && g.score > 0 ? bonusQ() : null;
+    const fin = () => {
+      hush();
+      const r = gameEnd(id, g.score);
+      if (r.rec) app.querySelector('#g-best').textContent = '🏆 ' + g.score;
+      o.innerHTML = overHTML(id, unit, g.score, r); o.hidden = false;
+      if (r.rec || r.won || r.dailyWon) sfx('win');
+    };
+    if (!q) return fin();
+    g.revived = true;
+    o.innerHTML = `<b class="chip sun">💖 ${T('chance')}</b><p class="sn-q">${q.q}</p>${q.stim ? `<div class="stim mini">${q.stim}</div>` : ''}
+      <div class="g-opts">${q.opts.map((t, i) => `<button class="btn" data-act="revive" data-i="${i}">${t}</button>`).join('')}</div>
+      <button class="btn alt small" data-act="revive" data-i="-1">${T('skip')}</button>`;
+    o.hidden = false; say(q.q, S.lang);
+    reviveCb = i => {
+      reviveCb = null;
+      if (!g.live()) return;
+      if (i === q.ans) { stat().smart++; save(); sfx('good'); buzz([20, 30, 45]); o.hidden = true; o.innerHTML = ''; g.over = false; resume(); }
+      else { if (i >= 0) sfx('whoosh'); fin(); }
+    };
+  };
+  // update(dt) runs every frame; dt is 0 while the game-over sheet is up
+  g.loop = update => {
+    let last = performance.now();
+    const f = now => {
+      if (!g.live()) return;
+      const dt = g.over ? 0 : Math.min(0.05, (now - last) / 1000); last = now; g.t += dt;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      update(dt);
+      requestAnimationFrame(f);
+    };
+    requestAnimationFrame(f);
+  };
+  g.img = (img, x, y, h, bottom) => { if (!img.naturalWidth) return h; const w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, x - w / 2, bottom ? y - h : y - h / 2, w, h); return w; };
+  g.anim = (img, n, fps, x, y, h, bottom) => { if (!img.naturalWidth) return; const fw = img.naturalWidth / n, w = h * fw / img.naturalHeight; ctx.drawImage(img, (Math.floor(g.t * fps) % n) * fw, 0, fw, img.naturalHeight, x - w / 2, bottom ? y - h : y - h / 2, w, h); };
+  // a world backdrop that covers the canvas and slides sideways by `off` pixels
+  g.back = (img, off) => {
+    if (!img.naturalWidth) { ctx.fillStyle = '#bfe3ff'; ctx.fillRect(0, 0, g.W, g.H); return; }
+    const s = g.H / img.naturalHeight, bw = img.naturalWidth * s;
+    for (let x = -(((off % bw) + bw) % bw); x < g.W; x += bw - 1) ctx.drawImage(img, x, 0, bw, g.H);
+  };
+  domHit = null; gameKey = null;
+  window.__chispa.game = () => g;   // for automated play-tests
+  return g;
+}
+
+/* the cat runs by itself; tap to jump over what is in the way */
+function vRun() {
+  const g = shell('run', '⭐', T('runHint')), { ctx } = g, w = pick(WORLDS), bg = gi('bg_' + w.id), obs = [0, 1, 2].map(i => gi(`ob_${w.id}_${i}`));
+  const k = g.H / 520, gy = g.H * 0.9, ch = Math.min(g.H * 0.27, 150), cx = g.W * 0.22, GR = 2600 * k, JV = Math.sqrt(2 * GR * ch * 1.3);
+  const top = (S.age === 0 ? 360 : 520) * k;
+  let y = 0, vy = 0, jumps = 0, speed = (S.age === 0 ? 200 : 250) * k, dist = 0, next = g.W * 0.9, items = [];
+  const jump = () => { if (g.over || jumps >= 2) return; vy = JV * (jumps ? 0.82 : 1); jumps++; sfx('whoosh'); };
+  g.cv.addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
+  gameKey = key => { if (key === ' ' || key === 'ArrowUp') jump(); };
+  g.state = () => ({ y, jumps, speed, items, cx, ch, gy });
+  g.loop(dt => {
+    speed = Math.min(top, speed + dt * 6 * k); dist += speed * dt;
+    vy -= GR * dt; y += vy * dt; if (y <= 0) { y = 0; vy = 0; jumps = 0; }
+    if (dist >= next) {
+      const img = pick(obs), h = ch * (0.5 + Math.random() * 0.2), gap = speed * (1.05 + Math.random() * 0.9);
+      items.push({ ob: true, img, h, x: g.W + 80 });
+      if (Math.random() < 0.6) items.push({ x: g.W + 80 + gap * (0.35 + Math.random() * 0.3), up: ch * (0.45 + Math.random() * 1.2) });
+      next = dist + gap;
+    }
+    g.back(bg, dist * 0.5);
+    for (const it of items) {
+      it.x -= speed * dt;
+      if (it.ob) {
+        const ow = g.img(it.img, it.x, gy, it.h, true);
+        if (!it.done && Math.abs(it.x - cx) < ow * 0.34 + ch * 0.16 && y < it.h * 0.72) { g.end(() => { items = items.filter(o => o.x > g.W * 0.8); vy = 0; }); }
+        else if (!it.done && it.x < cx - ow * 0.5 - ch * 0.2) { it.done = true; g.add(1); }
+      } else if (!it.done) {
+        const fy = gy - it.up + Math.sin(g.t * 5 + it.x * 0.01) * 4;
+        g.img(fishImg, it.x, fy, ch * 0.34);
+        if (Math.abs(it.x - cx) < ch * 0.36 && Math.abs(gy - y - ch * 0.5 - fy) < ch * 0.6) { it.done = true; g.add(1); sfx('tap'); buzz(15); g.pop(it.x, fy, '+1'); }
+      }
+    }
+    items = items.filter(it => it.x > -120);
+    ctx.fillStyle = 'rgba(20,20,40,.22)'; ctx.beginPath(); ctx.ellipse(cx, gy - 2, ch * 0.3 * (1 - Math.min(0.6, y / (ch * 3))), ch * 0.06, 0, 0, 7); ctx.fill();
+    g.anim(walkAnim, 16, y > 0 ? 0 : 16, cx, gy - y, ch, true);
+    g.drawPops(dt);
+  });
+  sfx('meow');
+}
+
+/* fish fall from the sky: slide the cat under them, but keep it dry */
+function vCatch() {
+  const g = shell('catch', '🐟', T('catchHint')), { ctx } = g, bg = gi('bg_nature'), gold = gi('g_goldfish'), drop = gi('g_drop');
+  const k = g.H / 520, ch = Math.min(g.H * 0.25, 140), by = g.H - 6, easy = S.age === 0;
+  let cx = g.W / 2, tx = cx, lives = 3, items = [], spawn = 0.5;
+  const hearts = () => g.info('❤️'.repeat(lives) + '🤍'.repeat(3 - lives));
+  const aim = e => { tx = Math.max(ch * 0.4, Math.min(g.W - ch * 0.4, e.clientX - g.cv.getBoundingClientRect().left)); };
+  g.cv.addEventListener('pointerdown', e => { e.preventDefault(); aim(e); });
+  g.cv.addEventListener('pointermove', aim);
+  gameKey = key => { if (key === 'ArrowLeft') tx = Math.max(ch * 0.4, tx - g.W * 0.16); if (key === 'ArrowRight') tx = Math.min(g.W - ch * 0.4, tx + g.W * 0.16); };
+  g.state = () => ({ items, cx, lives, ch, by, set: x => { tx = cx = x; } });
+  hearts();
+  g.loop(dt => {
+    const hard = Math.min(1, g.t / 80);
+    cx += (tx - cx) * Math.min(1, dt * 16);
+    if (dt && (spawn -= dt) <= 0) {
+      const r = Math.random(), kind = r < 0.18 + hard * 0.2 ? 'drop' : r > 0.92 ? 'gold' : 'fish';
+      items.push({ kind, x: ch * 0.4 + Math.random() * (g.W - ch * 0.8), y: -40, v: (150 + hard * 190 + Math.random() * 60) * k * (easy ? 0.75 : 1), ph: Math.random() * 6 });
+      spawn = 0.6 - hard * 0.3 + Math.random() * 0.3;
+    }
+    g.back(bg, 0);
+    for (const it of items) {
+      it.y += it.v * dt;
+      ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.kind === 'drop' ? 0 : Math.sin(g.t * 4 + it.ph) * 0.3);
+      g.img(it.kind === 'drop' ? drop : it.kind === 'gold' ? gold : fishImg, 0, 0, ch * (it.kind === 'drop' ? 0.46 : 0.4)); ctx.restore();
+      if (!it.done && it.y > by - ch * 0.95 && it.y < by - ch * 0.3 && Math.abs(it.x - cx) < ch * 0.42) {
+        it.done = true;
+        if (it.kind === 'drop') {
+          lives--; hearts(); sfx('bad'); buzz([70, 50, 70]); g.pop(it.x, it.y - 20, '💦');
+          if (lives <= 0) g.end(() => { lives = 1; hearts(); items = []; });
+        } else { const n = it.kind === 'gold' ? 3 : 1; g.add(n); sfx(n > 1 ? 'good' : 'tap'); buzz(15); g.pop(it.x, it.y - 20, '+' + n); }
+      }
+    }
+    items = items.filter(it => !it.done && it.y < g.H + 60);
+    g.img(catSit, cx, by, ch, true);
+    g.drawPops(dt);
+  });
+  sfx('meow');
+}
+
+/* tap to flap: collect the stars, keep away from the grumpy clouds */
+function vFly() {
+  const g = shell('fly', '⭐', T('flyHint')), { ctx } = g, cloud = gi('g_cloud'), star = gi('g_star');
+  const k = g.H / 520, ch = Math.min(g.H * 0.17, 96), cx = g.W * 0.26, GR = 1500 * k, top = (S.age === 0 ? 250 : 360) * k;
+  let y = g.H * 0.45, vy = 0, speed = (S.age === 0 ? 150 : 190) * k, dist = 0, next = g.W * 0.8, items = [], started = false;
+  const puffs = Array.from({ length: 7 }, (_, i) => ({ x: Math.random() * g.W, y: Math.random() * g.H * 0.9, r: 26 + Math.random() * 34, s: 0.2 + Math.random() * 0.3 }));
+  const flap = () => { if (g.over) return; started = true; vy = -430 * k; sfx('whoosh'); };
+  g.cv.addEventListener('pointerdown', e => { e.preventDefault(); flap(); });
+  gameKey = key => { if (key === ' ' || key === 'ArrowUp') flap(); };
+  g.state = () => ({ y, vy, items, cx, ch, started });
+  g.loop(dt => {
+    if (started) {
+      speed = Math.min(top, speed + dt * 4 * k); dist += speed * dt;
+      vy += GR * dt; y += vy * dt;
+      if (y < ch * 0.5) { y = ch * 0.5; vy = 0; }
+      if (y > g.H - ch * 0.5) { y = g.H - ch * 0.5; vy = -160 * k; }
+      if (dist >= next) {
+        const cs = ch * (1 + Math.random() * 0.35), cy = cs * 0.5 + Math.random() * (g.H - cs), x = g.W + 90;
+        items.push({ cloud: true, x, y: cy, s: cs });
+        if (Math.random() < 0.3 + Math.min(0.4, g.t / 150)) { const y2 = (cy + g.H * (0.42 + Math.random() * 0.16)) % g.H; items.push({ cloud: true, x: x + 30, y: Math.max(cs * 0.5, Math.min(g.H - cs * 0.5, y2)), s: cs }); }
+        items.push({ x: x + speed * 0.75, y: ch + Math.random() * (g.H - ch * 2) });
+        next = dist + speed * (1.5 + Math.random() * 0.5);
+      }
+    }
+    const sky = ctx.createLinearGradient(0, 0, 0, g.H); sky.addColorStop(0, '#7cc4ff'); sky.addColorStop(1, '#e3f4ff');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, g.W, g.H);
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    for (const p of puffs) {
+      p.x -= speed * p.s * dt * (started ? 1 : 0.3); if (p.x < -p.r * 3) { p.x = g.W + p.r * 3; p.y = Math.random() * g.H * 0.9; }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.arc(p.x + p.r, p.y + p.r * 0.2, p.r * 0.75, 0, 7); ctx.arc(p.x - p.r, p.y + p.r * 0.25, p.r * 0.65, 0, 7); ctx.fill();
+    }
+    for (const it of items) {
+      it.x -= speed * dt;
+      const d = Math.hypot(it.x - cx, it.y - y);
+      if (it.cloud) {
+        g.img(cloud, it.x, it.y + Math.sin(g.t * 2 + it.x * 0.01) * 3, it.s);
+        if (d < it.s * 0.36 + ch * 0.27) g.end(() => { items = []; y = g.H * 0.45; vy = 0; started = false; });
+      } else if (!it.done) {
+        g.img(star, it.x, it.y, ch * 0.5 * (1 + Math.sin(g.t * 6 + it.x) * 0.06));
+        if (d < ch * 0.62) { it.done = true; g.add(1); sfx('tap'); buzz(15); g.pop(it.x, it.y, '+1'); }
+      }
+    }
+    items = items.filter(it => it.x > -120);
+    ctx.save(); ctx.translate(cx, y); ctx.rotate(Math.max(-0.35, Math.min(0.5, vy / (900 * k))));
+    g.anim(flyAnim, 16, 14, 0, 0, ch); ctx.restore();
+    g.drawPops(dt);
+  });
+  sfx('meow');
+}
+
+/* mice pop out of their holes for a moment: tap them, but leave the hedgehog alone */
+function vWhack() {
+  const g = shell('whack', '🐭', T('whackHint')), easy = S.age === 0, up = {};
+  let left = 40;
+  g.cv.hidden = true;
+  g.dom.innerHTML = `<div class="wh-grid">${Array.from({ length: 9 }, (_, i) => `<button class="wh-hole" data-act="dom" data-i="${i}" aria-label="${i + 1}"><span class="wh-pop"></span></button>`).join('')}</div>`;
+  const holes = [...g.dom.querySelectorAll('.wh-hole')];
+  const hide = i => { up[i] = null; holes[i].classList.remove('up'); };
+  const pop = () => {
+    if (!g.live()) return;
+    const free = holes.map((_, i) => i).filter(i => !up[i]);
+    if (!g.over && free.length > 5) {
+      const i = pick(free), tk = up[i] = { bad: Math.random() < 0.2 }, hard = Math.min(1, g.t / 40);
+      holes[i].querySelector('.wh-pop').innerHTML = pic(tk.bad ? 'g_hedgehog' : 'g_mouse');
+      holes[i].classList.add('up');
+      setTimeout(() => { if (up[i] === tk) hide(i); }, (easy ? 1600 : 1200) - hard * 450);
+    }
+    setTimeout(pop, 330 + Math.random() * 480 - Math.min(180, g.t * 4));
+  };
+  domHit = (d, b) => {
+    const i = +d.i, u = up[i];
+    if (!u || g.over) return;
+    hide(i); b.classList.add(u.bad ? 'ouch' : 'hit'); setTimeout(() => b.classList.remove('hit', 'ouch'), 320);
+    if (u.bad) { left = Math.max(0, left - 4); sfx('bad'); buzz([70, 50, 70]); floatEm(b, '−4 ⏱', b.clientWidth / 2 - 22, 0); }
+    else { g.add(1); sfx(Math.random() < 0.12 ? 'meow' : 'tap'); buzz(20); floatEm(b, '+1', b.clientWidth / 2 - 10, 0); }
+  };
+  g.state = () => ({ up, left });
+  g.loop(dt => {
+    left -= dt; g.info('⏱ ' + Math.max(0, Math.ceil(left)));
+    if (left <= 0) g.end(() => { left = 12; });
+  });
+  pop();
+}
+
+/* find the matching sticker pairs before the clock runs out; every cleared board adds time and cards */
+function vMemory() {
+  const g = shell('memory', '🃏', T('memHint')), all = WORLDS.flatMap(w => w.stickers.map((_, i) => `st_${w.id}_${i}`));
+  let left = 60, round = 0, open = [], busy = false, remain = 0, cards = [];
+  g.cv.hidden = true;
+  const deal = () => {
+    if (!g.live()) return;
+    const pairs = [3, 4, 6, 6, 8][Math.min(round, 4)];
+    cards = shuffle(sample(all, pairs).flatMap(x => [x, x])); remain = pairs; open = []; busy = false;
+    g.dom.innerHTML = `<div class="mm-grid" style="--c:${pairs === 4 || pairs === 8 ? 4 : 3}">${cards.map((c, i) => `<button class="mm-card" data-act="dom" data-i="${i}" aria-label="${i + 1}"><span class="mm-back">🐾</span>${pic(c)}</button>`).join('')}</div>`;
+  };
+  domHit = (d, b) => {
+    const i = +d.i;
+    if (busy || g.over || b.classList.contains('up')) return;
+    b.classList.add('up'); sfx('tap'); open.push(i);
+    if (open.length < 2) return;
+    const [x, y] = open, els = g.dom.querySelectorAll('.mm-card'); open = [];
+    if (cards[x] === cards[y]) {
+      els[x].classList.add('done'); els[y].classList.add('done'); g.add(1); sfx('good'); buzz(25);
+      if (--remain === 0) { round++; left += 12; busy = true; setTimeout(deal, 750); }
+    } else { busy = true; setTimeout(() => { els[x].classList.remove('up'); els[y].classList.remove('up'); busy = false; }, 750); }
+  };
+  g.state = () => ({ cards, left, round });
+  g.loop(dt => {
+    left -= dt; g.info('⏱ ' + Math.max(0, Math.ceil(left)));
+    if (left <= 0) g.end(() => { left = 20; });
+  });
+  deal();
+}
 
 /* ---------- input ---------- */
 const ACT = {
@@ -1130,12 +1471,14 @@ const ACT = {
   },
   start() { S.setup = true; save(); sfx('good'); show('map'); },
   go(d) { sfx('tap'); show(d.v); },
+  revive(d) { if (reviveCb) reviveCb(+d.i); },
+  dom(d, b) { if (domHit) domHit(d, b); },
   level(d) { sfx('tap'); startLevel(d.w, +d.i); },
   mute(d, b) { S.sound = !S.sound; save(); b.textContent = S.sound ? '🔊' : '🔇'; if (!S.sound) { hush(); } },
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
-    S.stars = {}; S.stickers = []; S.byAge = {}; S.setup = false; save(); show('title');
+    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.setup = false; save(); show('title');
   },
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {
