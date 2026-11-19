@@ -48,6 +48,30 @@ def segments(x, count=0, min_gap=0.35, pad=0.07):
     return [(max(0, a - p) * win, min(n, b + p) * win) for a, b in spans if (b - a) * 0.02 > 0.05]
 
 
+def stretch(x, tempo):
+    """Slow down (tempo < 1) or speed up speech without changing its pitch (ffmpeg's atempo filter)."""
+    if abs(tempo - 1) < 0.01:
+        return x
+    from fractions import Fraction
+    g = av.filter.Graph()
+    src = g.add_abuffer(sample_rate=RATE, format="s16", layout="mono", time_base=Fraction(1, RATE))
+    at = g.add("atempo", str(tempo))
+    sink = g.add("abuffersink")
+    src.link_to(at); at.link_to(sink); g.configure()
+    tail = np.zeros(int(RATE * 0.3), np.float32)  # the filter holds back its last samples; feed it silence to flush
+    frame = av.AudioFrame.from_ndarray((np.concatenate([x, tail]) * 32767).astype(np.int16).reshape(1, -1), format="s16", layout="mono")
+    frame.sample_rate, frame.pts, frame.time_base = RATE, 0, Fraction(1, RATE)
+    g.push(frame); g.push(None)
+    out = []
+    while True:
+        try:
+            out.append(g.pull().to_ndarray().reshape(-1))
+        except (av.error.EOFError, av.error.BlockingIOError):
+            break
+    y = np.concatenate(out).astype(np.float32) / 32767
+    return y[: int(len(x) / tempo)]
+
+
 def mp3(x):
     pcm = (x * (0.6 / max(1e-6, float(np.abs(x).max()))) * 32767).astype(np.int16)  # headroom: never clips
     fade = int(RATE * 0.01)
@@ -70,6 +94,9 @@ def mp3(x):
 
 def main():
     lang, manifest, out_dir = sys.argv[1], json.load(open(sys.argv[2], encoding="utf-8")), sys.argv[3]
+    # optional: tempo for phrases and for single words (1 = as recorded, 0.85 = 15% slower)
+    tempo = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
+    word_tempo = float(sys.argv[5]) if len(sys.argv) > 5 else tempo
     base = os.path.dirname(os.path.abspath(sys.argv[2]))
     pack, entries, ok = bytearray(), {}, True
     for b in manifest:
@@ -81,7 +108,8 @@ def main():
             print("  MISMATCH; spans (s):", " ".join("%.1f-%.1f" % (a / RATE, e / RATE) for a, e in segs))
             continue
         for t, (a, e) in zip(b["texts"], segs):
-            clip = mp3(x[a:e])
+            # single words come out rushed when recorded as a list, so they are slowed a little more
+            clip = mp3(stretch(x[a:e], word_tempo if " " not in t else tempo))
             entries[t] = [len(pack), len(clip)]
             pack += clip
     if not ok:
