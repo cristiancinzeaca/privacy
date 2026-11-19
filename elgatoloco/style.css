@@ -318,3 +318,16 @@ p { margin: 0; }
 .scene:not(.walking) .hero .sprite { animation: none; }
 @keyframes sprite { to { background-position: 100% 0; } }
 @media (prefers-reduced-motion: reduce) { .sprite { animation: none !important; } }
+
+/* high five: close-up of the cat reaching its paw at the player; the paw sits at 79% / 20.5% of the picture */
+.hi5 { align-items: end; overflow: hidden; min-height: 260px; container-type: size; }
+/* as tall as the panel allows, but never wider than it (the picture is 673 x 720) */
+.five { position: relative; height: min(100cqh, 100cqw * 720 / 673, 480px); aspect-ratio: 673 / 720; transform-origin: 79% 20%; animation: reach 1s ease-in-out infinite alternate; }
+.five .pic { object-position: 50% 100%; filter: drop-shadow(0 6px 8px rgba(20, 16, 50, .25)); }
+.five .ring { position: absolute; left: 79%; top: 20.5%; width: 47%; aspect-ratio: 1; border-radius: 50%; border: 5px dashed var(--sun); pointer-events: none; animation: ringpulse .7s ease-in-out infinite alternate; }
+.five.hit { animation: slap .45s ease-out forwards; }
+.five.hit .ring { border-style: solid; animation: ringout .45s ease-out forwards; }
+@keyframes reach { from { transform: scale(1); } to { transform: scale(1.06) rotate(1.5deg); } }
+@keyframes ringpulse { from { transform: translate(-50%, -50%) scale(.92); opacity: .95; } to { transform: translate(-50%, -50%) scale(1.08); opacity: .55; } }
+@keyframes slap { 0% { transform: scale(1.04); } 30% { transform: scale(1.24) rotate(-4deg); } 100% { transform: scale(1.05); } }
+@keyframes ringout { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.9); opacity: 0; } }

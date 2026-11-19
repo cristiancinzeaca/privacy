@@ -639,7 +639,7 @@ function playSeq() {
 /* high five after a stage with no mistakes */
 function hi5() {
   const p = $('#panel'), id = ++cur.hiId; cur.hi = id;
-  p.innerHTML = `<p class="q">${T('hi5')}</p><div class="hi5"><div class="cat">${cat('wave')}</div><button class="paw" data-act="hi5" aria-label="${T('hi5')}">${pic('paw', '🐾')}</button></div>`;
+  p.innerHTML = `<p class="q">${T('hi5')}</p><div class="hi5"><button class="five" data-act="hi5" aria-label="${T('hi5')}">${pic('cat_hi5')}<span class="ring"></span></button></div>`;
   p.className = 'panel show'; sfx('meow'); say(T('hi5'), S.lang, true);
   later(6000, () => { if (cur.hi === id) { cur.hi = 0; walk(); } });
 }
@@ -943,7 +943,8 @@ const ACT = {
   hi5(d, b) {
     if (!cur || !cur.hi) return;
     cur.hi = 0; sfx('clap'); b.classList.add('hit');
-    for (let i = 0; i < 6; i++) floatEm(b.parentNode, pick(['✨', '⭐', '💜']), b.offsetLeft + rnd(90), b.offsetTop + rnd(70));
+    // stars fly out of the paw, which sits at 79% / 20% of the picture
+    for (let i = 0; i < 10; i++) floatEm(b.parentNode, pick(['✨', '⭐', '💜', '💥']), b.offsetLeft + b.offsetWidth * 0.79 - 14 + rnd(90) - 45, b.offsetTop + b.offsetHeight * 0.2 - 14 + rnd(70) - 35);
     later(800, walk);
   },
   ptile(d) {
