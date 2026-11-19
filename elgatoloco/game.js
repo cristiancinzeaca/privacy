@@ -192,13 +192,15 @@ const FACTS = [
 ];
 
 const WORLDS = [
-  { id: 'words', em: '🌳', far: '🌲🌳🌲🌲🌳🌲', near: '🍄🌼🌿🌼', obst: ['🕸️', '🍄', '🚧'], stickers: W('🦊 🦉 🐿️ 🦌 🐻 🦋') },
-  { id: 'math', em: '⛰️', far: '⛰️🏔️⛰️⛰️🏔️⛰️', near: '🌱🌾🌱🌾', obst: ['🧱', '🌋', '⛄'], stickers: W('🦅 🐐 🐺 🐏 🦙 🐉') },
-  { id: 'logic', em: '💎', far: '💎🔮💎💎🔮💎', near: '🕯️✨🕯️✨', obst: ['🔒', '🚪', '🗝️'], night: true, stickers: W('🦇 🕷️ 🦎 🐭 🦔 🤖') },
-  { id: 'nature', em: '🏝️', far: '🌴🏝️🌴🌴🏝️🌴', near: '🐚🌺🐚🌺', obst: ['🌊', '🦀', '🐊'], stickers: W('🐬 🐢 🐙 🦜 🐠 🦩') },
-  { id: 'mix', em: '🏰', far: '🏰☁️✨🏰☁️✨', near: '⭐✨⭐✨', obst: ['☁️', '🌪️', '🔒'], night: true, stickers: W('🦄 🚀 👑 🪐 🌟 🏆') },
+  { id: 'words', em: '🌳', far: '🌲🌳🌲🌲🌳🌲', near: '🍄🌼🌿🌼', obst: ['🕸️', '🍄', '🚧'], stickers: W('🦊 🦉 🐿️ 🦌 🐻 🦋 🐰 🦡 🦝 🐸 🐞 🐌') },
+  { id: 'math', em: '⛰️', far: '⛰️🏔️⛰️⛰️🏔️⛰️', near: '🌱🌾🌱🌾', obst: ['🧱', '🌋', '⛄'], stickers: W('🦅 🐐 🐺 🐏 🦙 🐉 🐧 🐆 🐻‍❄️ ⛄ 🦫 🦬') },
+  { id: 'logic', em: '💎', far: '💎🔮💎💎🔮💎', near: '🕯️✨🕯️✨', obst: ['🔒', '🚪', '🗝️'], night: true, stickers: W('🦇 🕷️ 🦎 🐭 🦔 🤖 🐍 🪲 🐛 👻 💎 🐲') },
+  { id: 'nature', em: '🏝️', far: '🌴🏝️🌴🌴🏝️🌴', near: '🐚🌺🐚🌺', obst: ['🌊', '🦀', '🐊'], stickers: W('🐬 🐢 🐙 🦜 🐠 🦩 🐳 🦀 🐡 🦭 🦈 🐒') },
+  { id: 'mix', em: '🏰', far: '🏰☁️✨🏰☁️✨', near: '⭐✨⭐✨', obst: ['☁️', '🌪️', '🔒'], night: true, stickers: W('🦄 🚀 👑 🪐 🌟 🏆 👽 🌙 ☄️ 🌈 🧙 🪔') },
 ];
-const CASTLE_NEED = 20, STEPS = 5, PER_WORLD = 6;
+const CASTLE_NEED = 20, STEPS = 5, PER_WORLD = 12;
+// how hard the questions of a level are: grows with every level up to 6, then every second level
+const hard = idx => (idx < 6 ? idx : 5 + Math.floor((idx - 4) / 2));
 const totalStars = () => Object.values(S.stars).reduce((a, b) => a + b, 0);
 
 /* ElGatoLoco art: assets/cat_<pose>.webp (wave, cheer, sit, walk, fly) */
@@ -628,7 +630,7 @@ const ARC = {
 const plain = h => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 function askQ(n) {
   const w = cur.world === 'mix' ? pick(Object.keys(ARC)) : cur.world;
-  const c = G[pick(ARC[w][S.age])](S.age, cur.idx);
+  const c = G[pick(ARC[w][S.age])](S.age, hard(cur.idx));
   let ids = c.opts.map((_, i) => i);
   if (ids.length > n) ids = shuffle([c.ans, ...sample(ids.filter(i => i !== c.ans), n - 1)]);
   return { q: c.q, stim: c.stim, opts: ids.map(i => plain(c.opts[i])), ans: ids.indexOf(c.ans), auto: c.auto, after: c.after };
@@ -647,11 +649,12 @@ function startLevel(world, idx) {
     { k: 'arc', g: GAME_ORDER[a] }, { k: 'quiz', g: qz[0] }, { k: 'break', g: idx % 2 ? 'pet' : 'tickle' },
     { k: 'arc', g: GAME_ORDER[(a + 1) % 4] }, { k: 'quiz', g: qz[1] }, { k: 'arc', g: GAME_ORDER[(a + 2) % 4] },
   ];
+  if (idx >= 6) seq.push({ k: 'quiz', g: qz[2] }, { k: 'arc', g: GAME_ORDER[(a + 3) % 4] });
   cur = { world, idx, w, step: 0, pos: 0, mistakes: 0, stageMist: 0, seq, ch: null, hi: 0, hiId: 0 };
   view = 'level';
   app.innerHTML = `<div class="level w-${world}">
     <header class="topbar" style="padding-bottom:0"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button>
-      <div class="steps">${'<i>★</i>'.repeat(STEPS)}</div>
+      <div class="steps">${'<i>★</i>'.repeat(seq.filter(x => x.k !== 'break').length)}</div>
       <button class="icon-btn" data-act="mute" aria-label="${T('sound')}">${S.sound ? '🔊' : '🔇'}</button></header>
     <div class="scene"><div class="bg"></div>
       <div class="hero">${cat('walk')}</div><div class="obst"></div><div class="toast"></div></div>
@@ -671,7 +674,7 @@ function walk() {
     scene.classList.remove('walking');
     if (last) return finish();
     cur.stageMist = 0; cur.wrong = 0; cur.lock = false; cur.ch = null; cur.arc = null; cur.pz = null;
-    if (st.k === 'quiz') { cur.ch = G[st.g](S.age, cur.idx); renderCh(); }
+    if (st.k === 'quiz') { cur.ch = G[st.g](S.age, hard(cur.idx)); renderCh(); }
     else if (st.k === 'break') petBreak(st.g);
     else if (st.g === 'puzzle') puzzle();
     else arcade(st.g);

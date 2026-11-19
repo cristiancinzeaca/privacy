@@ -280,11 +280,11 @@ p { margin: 0; }
 @keyframes purr { to { transform: scale(1.06, .95); } }
 
 /* ---------- 3D art: character and world backgrounds (assets/) ---------- */
-.w-words  { --bg: url(assets/bg_words.webp); }
-.w-math   { --bg: url(assets/bg_math.webp); }
-.w-logic  { --bg: url(assets/bg_logic.webp); }
-.w-nature { --bg: url(assets/bg_nature.webp); }
-.w-mix    { --bg: url(assets/bg_mix.webp); }
+.w-words  { --wbg: url(assets/bg_words.webp); }
+.w-math   { --wbg: url(assets/bg_math.webp); }
+.w-logic  { --wbg: url(assets/bg_logic.webp); }
+.w-nature { --wbg: url(assets/bg_nature.webp); }
+.w-mix    { --wbg: url(assets/bg_mix.webp); }
 
 .catimg { width: 100%; height: 100%; display: block; object-fit: contain; object-position: 50% 100%; pointer-events: none; user-select: none; -webkit-user-drag: none; filter: drop-shadow(0 5px 6px rgba(20, 16, 50, .28)); }
 .title .cat { width: 210px; height: 210px; }
@@ -292,15 +292,15 @@ p { margin: 0; }
 .cat.mini .catimg { filter: none; }
 
 /* each background file is the picture followed by its mirror image, so it tiles without a seam */
-.scene .bg { position: absolute; top: 0; left: 0; height: 100%; aspect-ratio: 48 / 5; background: var(--bg) 0 0 / 50% 100% repeat-x; animation: scroll 36s linear infinite; animation-play-state: paused; }
+.scene .bg { position: absolute; top: 0; left: 0; height: 100%; aspect-ratio: 48 / 5; background: var(--wbg) 0 0 / 50% 100% repeat-x; animation: scroll 36s linear infinite; animation-play-state: paused; }
 .walking .bg { animation-play-state: running; }
 .hero { left: 8%; bottom: 6%; width: 118px; height: 118px; }
 .obst { bottom: 9%; filter: drop-shadow(0 4px 4px rgba(20, 16, 50, .3)); }
 
-.world { --veil: linear-gradient(100deg, rgba(255, 255, 255, .88) 25%, rgba(255, 255, 255, .15)); background: var(--veil), var(--bg) 0 60% / auto 190%; box-shadow: 0 6px 16px rgba(29, 43, 83, .14); }
+.world { --veil: linear-gradient(100deg, rgba(255, 255, 255, .88) 25%, rgba(255, 255, 255, .15)); background: var(--veil), var(--wbg) 0 60% / auto 190%; box-shadow: 0 6px 16px rgba(29, 43, 83, .14); }
 .world.night { --veil: linear-gradient(100deg, rgba(24, 18, 58, .85) 25%, rgba(24, 18, 58, .1)); }
 
-.level .cv { background: linear-gradient(rgba(255, 255, 255, .62), rgba(255, 255, 255, .62)), var(--bg) 0 50% / auto 100%; }
+.level .cv { background: linear-gradient(rgba(255, 255, 255, .62), rgba(255, 255, 255, .62)), var(--wbg) 0 50% / auto 100%; }
 
 /* pictures for obstacles, stickers, world icons and the high-five paw */
 .pic { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
@@ -424,3 +424,6 @@ p { margin: 0; }
 .qs-med span.on { filter: none; opacity: 1; }
 
 .vmsg { margin: 8px 0 0; line-height: 1.35; text-align: left; }
+
+.steps { min-width: 0; gap: 5px; }
+.steps i { flex: 0 1 30px; width: auto; height: auto; aspect-ratio: 1; min-width: 0; }
