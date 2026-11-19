@@ -48,6 +48,10 @@ const STR = {
   q_smart: ['A doua șansă câștigată', 'Segundas oportunidades ganadas', 'Second chances won'],
   q_daily: ['Provocări zilnice reușite', 'Retos diarios conseguidos', 'Daily challenges done'],
   vibe: ['Vibrații', 'Vibración', 'Vibration'],
+  vtest: ['Probează vibrația', 'Probar la vibración', 'Test vibration'],
+  vNone: ['Acest browser nu poate vibra (iPhone și iPad nu permit vibrații din pagini web).', 'Este navegador no puede vibrar (iPhone y iPad no lo permiten en páginas web).', 'This browser cannot vibrate (iPhone and iPad do not allow it for web pages).'],
+  vBlocked: ['Browserul a refuzat vibrația. Deschide jocul direct în Chrome.', 'El navegador ha rechazado la vibración. Abre el juego directamente en Chrome.', 'The browser refused to vibrate. Open the game directly in Chrome.'],
+  vSent: ['Am trimis o vibrație lungă. Dacă nu ai simțit nimic, e oprită din telefon: Setări → Sunete și vibrații → intensitatea vibrațiilor / feedback la atingere. Verifică și modul Nu deranja și economisirea bateriei.', 'He enviado una vibración larga. Si no has notado nada, está apagada en el teléfono: Ajustes → Sonidos y vibración → intensidad de vibración / respuesta táctil. Revisa también No molestar y el ahorro de batería.', 'A long vibration was sent. If you felt nothing, it is turned off on the phone: Settings → Sounds and vibration → vibration intensity / touch feedback. Also check Do Not Disturb and battery saver.'],
   snake: ['Pisica lungă', 'El gato largo', 'Long cat'],
   snakeSub: ['Joacă liber: prinde pești și crește!', 'Juego libre: ¡atrapa peces y crece!', 'Free play: catch fish and grow!'],
   snakeHint: ['Glisează ca să schimbi direcția', 'Desliza para cambiar de dirección', 'Swipe to change direction'],
@@ -246,9 +250,12 @@ function holdSnd(name, vol, loop) {
   return true;
 }
 // phone vibration (a number of milliseconds or an on/off pattern); silently does nothing where unsupported
+let vibeMsg = '';
 function buzz(pattern) {
   if (S.vibe === false) return;
-  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+  // phone motors need about 40 ms to spin up: shorter pulses are not felt at all
+  const p = [].concat(pattern).map((v, i) => i % 2 ? Math.max(60, v) : Math.max(45, Math.round(v * 1.6)));
+  try { if (navigator.vibrate) return navigator.vibrate(p); } catch (e) {}
 }
 function sfx(name, i) {
   if (!S.sound) return;
@@ -596,6 +603,7 @@ function vSettings() {
       <div class="field"><span class="label">${T('learn')}</span>${seg('learn', [['both', T('both')], ['es', 'Español'], ['en', 'English']])}</div>
       <div class="field"><span class="label">${T('sound')}</span>${seg('sound', [[true, T('on')], [false, T('off')]])}</div>
       <div class="field"><span class="label">${T('vibe')}</span>${seg('vibe', [[true, T('on')], [false, T('off')]])}</div>
+      <button class="btn alt small" data-act="vtest">📳 ${T('vtest')}</button>${vibeMsg ? `<p class="label vmsg">${T(vibeMsg)}</p>` : ''}
       <p class="note">${T('privacy')}</p>
       <div><button class="btn ${resetArmed ? 'danger' : 'alt'}" data-act="reset">${resetArmed ? T('resetSure') : T('reset')}</button></div>
     </div></div>`;
@@ -1472,6 +1480,10 @@ const ACT = {
   start() { S.setup = true; save(); sfx('good'); show('map'); },
   go(d) { sfx('tap'); show(d.v); },
   revive(d) { if (reviveCb) reviveCb(+d.i); },
+  vtest() {
+    let r; try { r = navigator.vibrate ? navigator.vibrate([500, 200, 500]) : null; } catch (e) { r = false; }
+    vibeMsg = r === null ? 'vNone' : r ? 'vSent' : 'vBlocked'; show(view);
+  },
   dom(d, b) { if (domHit) domHit(d, b); },
   level(d) { sfx('tap'); startLevel(d.w, +d.i); },
   mute(d, b) { S.sound = !S.sound; save(); b.textContent = S.sound ? '🔊' : '🔇'; if (!S.sound) { hush(); } },

@@ -422,3 +422,5 @@ p { margin: 0; }
 .qs-med { display: flex; font-size: 1.35rem; }
 .qs-med span { filter: grayscale(1); opacity: .28; }
 .qs-med span.on { filter: none; opacity: 1; }
+
+.vmsg { margin: 8px 0 0; line-height: 1.35; text-align: left; }
