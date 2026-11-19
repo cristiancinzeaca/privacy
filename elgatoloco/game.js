@@ -12,7 +12,7 @@ const LANGS = ['ro', 'es', 'en'];
 
 /* ---------- state ---------- */
 const KEY = 'elgatoloco-v1';
-const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {} };
+const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
@@ -23,6 +23,7 @@ if (!S.setup) {
 
 /* ---------- text ---------- */
 const STR = {
+  vibe: ['Vibrații', 'Vibración', 'Vibration'],
   snake: ['Pisica lungă', 'El gato largo', 'Long cat'],
   snakeSub: ['Joacă liber: prinde pești și crește!', 'Juego libre: ¡atrapa peces y crece!', 'Free play: catch fish and grow!'],
   snakeHint: ['Glisează ca să schimbi direcția', 'Desliza para cambiar de dirección', 'Swipe to change direction'],
@@ -191,11 +192,50 @@ function tone(f, at, d, type, v) {
   g.gain.setValueAtTime(v || 0.14, at); g.gain.exponentialRampToValueAtTime(0.001, at + d);
   o.connect(g); g.connect(ac.destination); o.start(at); o.stop(at + d + 0.02);
 }
+/* Recorded cat sounds live in assets/sfx. Until a file has loaded (or if it is missing) the synthesised
+   version further down plays instead. */
+const SND = {}, HOLD = {};
+function loadSnd() {
+  if (SND.asked) return; SND.asked = true;
+  ['meow1.mp3', 'meow2.mp3', 'tickle.mp3', 'slap.mp3', 'purr.wav'].forEach(f =>
+    fetch('assets/sfx/' + f).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b)).then(a => { SND[f.split('.')[0]] = a; }).catch(() => {}));
+}
+function playSnd(name, vol, loop) {
+  const b = SND[name]; if (!b) return null;
+  const src = ac.createBufferSource(), g = ac.createGain();
+  src.buffer = b; src.loop = !!loop; g.gain.value = vol; src.connect(g); g.connect(ac.destination); src.start();
+  return { src, g };
+}
+// a sound that lasts while the player keeps rubbing: every call keeps it going a little longer, then it fades
+function holdSnd(name, vol, loop) {
+  let h = HOLD[name];
+  if (!h || h.dead) {
+    h = playSnd(name, vol, loop); if (!h) return false;
+    HOLD[name] = h; if (!loop) h.src.onended = () => { h.dead = true; };
+  }
+  h.g.gain.cancelScheduledValues(ac.currentTime); h.g.gain.setTargetAtTime(vol, ac.currentTime, 0.03);
+  clearTimeout(h.t);
+  h.t = setTimeout(() => {
+    h.g.gain.setTargetAtTime(0, ac.currentTime, 0.15);
+    if (loop) { h.dead = true; setTimeout(() => { try { h.src.stop(); } catch (e) {} }, 800); }
+  }, 450);
+  return true;
+}
+// phone vibration (a number of milliseconds or an on/off pattern); silently does nothing where unsupported
+function buzz(pattern) {
+  if (S.vibe === false) return;
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+}
 function sfx(name, i) {
   if (!S.sound) return;
   try {
     ac = ac || new (window.AudioContext || window.webkitAudioContext)();
     if (ac.state === 'suspended') ac.resume();
+    loadSnd();
+    if (name === 'meow' && playSnd(pick(['meow1', 'meow2']), 0.9)) return;
+    if (name === 'purr' && holdSnd('purr', 1, true)) return;
+    if (name === 'giggle' && holdSnd('tickle', 0.9, false)) return;
+    if (name === 'clap' && playSnd('slap', 1)) return;
     const n = ac.currentTime;
     if (name === 'good') [523, 659, 784].forEach((f, k) => tone(f, n + k * 0.09, 0.2));
     else if (name === 'bad') tone(170, n, 0.25, 'sawtooth', 0.07);
@@ -526,6 +566,7 @@ function vSettings() {
       <div class="field"><span class="label">${T('age')}</span>${ageSeg()}</div>
       <div class="field"><span class="label">${T('learn')}</span>${seg('learn', [['both', T('both')], ['es', 'Español'], ['en', 'English']])}</div>
       <div class="field"><span class="label">${T('sound')}</span>${seg('sound', [[true, T('on')], [false, T('off')]])}</div>
+      <div class="field"><span class="label">${T('vibe')}</span>${seg('vibe', [[true, T('on')], [false, T('off')]])}</div>
       <p class="note">${T('privacy')}</p>
       <div><button class="btn ${resetArmed ? 'danger' : 'alt'}" data-act="reset">${resetArmed ? T('resetSure') : T('reset')}</button></div>
     </div></div>`;
@@ -583,6 +624,7 @@ function walk() {
   ob.innerHTML = last ? pic('ob_gift', '🎁') : st.k === 'break' ? '' : pic(`ob_${cur.w.id}_${cur.step % cur.w.obst.length}`, cur.w.obst[cur.step % cur.w.obst.length]);
   void ob.offsetWidth; ob.style.transition = '';
   scene.classList.add('walking'); ob.classList.add('in');
+  if (Math.random() < 0.3) later(450, () => sfx('meow'));
   later(st && st.k === 'break' ? 800 : 1450, () => {
     scene.classList.remove('walking');
     if (last) return finish();
@@ -617,11 +659,11 @@ function renderCh() {
   if (c.type === 'simon') later(700, playSeq);
 }
 function mistake() {
-  cur.mistakes++; cur.stageMist++; sfx('bad');
+  cur.mistakes++; cur.stageMist++; sfx('bad'); buzz([70, 50, 70]);
   const hero = $('.hero'); hero.classList.remove('oops'); void hero.offsetWidth; hero.classList.add('oops');
 }
 function solved() {
-  cur.lock = true; sfx('good');
+  cur.lock = true; sfx('good'); buzz(25);
   const c = cur.ch; if (c && c.after) later(350, () => say(c.after[0], c.after[1]));
   $('.level').classList.remove('arcade');
   $('.steps').children[cur.step].classList.add('on');
@@ -665,7 +707,7 @@ function petBreak(mode) {
     kitty.classList.add('wig'); clearTimeout(tmr); tmr = setTimeout(() => kitty.classList.remove('wig'), 220);
     bar.style.width = Math.min(100, dist / need * 100) + '%';
     const now = performance.now();
-    if (now - lastFx > 260) { lastFx = now; floatEm(z, pick(mode === 'tickle' ? ['😹', '😆', '✨'] : ['💗', '💜', '😻']), x, y); sfx(mode === 'tickle' ? 'giggle' : 'purr'); }
+    if (now - lastFx > 260) { lastFx = now; floatEm(z, pick(mode === 'tickle' ? ['😹', '😆', '✨'] : ['💗', '💜', '😻']), x, y); sfx(mode === 'tickle' ? 'giggle' : 'purr'); buzz(mode === 'tickle' ? 12 : 24); }
     if (dist >= need) { done = true; sfx('meow'); kitty.classList.remove('wig'); kitty.classList.add('boing'); cur.pos++; later(1000, walk); }
   };
   z.addEventListener('pointerdown', e => { lx = null; try { z.setPointerCapture(e.pointerId); } catch (_) {} mv(e); });
@@ -911,7 +953,7 @@ function finish() {
   const isNew = !S.stickers.includes(key);
   S.stars[key] = Math.max(S.stars[key] || 0, stars);
   if (isNew) S.stickers.push(key);
-  save(); sfx('win');
+  save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
   const canNext = idx + 1 < PER_WORLD;
   cur = null; view = 'done';
   app.innerHTML = `<div class="done">
@@ -976,7 +1018,7 @@ function vSnake() {
     say(q.q, S.lang);
   }
   function die() {
-    alive = false; sfx('bad'); hush();
+    alive = false; sfx('bad'); buzz(220); hush();
     const rec = score > best0;
     if (rec) { S.best.snake = score; save(); app.querySelector('#sn-best').textContent = '🏆 ' + score; }
     const o = app.querySelector('#sn-over');
@@ -993,7 +1035,7 @@ function vSnake() {
     prev = body.map(b => ({ ...b }));
     body.unshift({ x: nx, y: ny });
     if (food.x === nx && food.y === ny) {
-      score++; eaten++; setScore(); sfx('tap'); pops.push({ x: px(nx), y: py(ny), t: '+1', life: 0.7 });
+      score++; eaten++; setScore(); sfx('tap'); buzz(15); pops.push({ x: px(nx), y: py(ny), t: '+1', life: 0.7 });
       prev.push({ ...prev[prev.length - 1] });
       food = spot(); stepMs = Math.max(easy ? 190 : 120, stepMs - 4);
       if (eaten % 5 === 0 && !bonus) startBonus();
@@ -1001,7 +1043,7 @@ function vSnake() {
     if (bonus) {
       const t = bonus.tokens.find(k => k.x === nx && k.y === ny);
       if (t) {
-        if (t.ok) { score += 5; setScore(); sfx('good'); pops.push({ x: px(nx), y: py(ny), t: '⭐ +5', life: 1 }); }
+        if (t.ok) { score += 5; setScore(); sfx('good'); buzz([20, 30, 45]); pops.push({ x: px(nx), y: py(ny), t: '⭐ +5', life: 1 }); }
         else { sfx('whoosh'); pops.push({ x: px(nx), y: py(ny), t: '💨', life: 0.7 }); }
         endBonus();
       } else if (time > bonus.until) endBonus();
@@ -1081,7 +1123,8 @@ const ACT = {
       S.byAge[S.age] = { stars: S.stars, stickers: S.stickers };
       const p = S.byAge[+d.v] || {}; S.stars = p.stars || {}; S.stickers = p.stickers || [];
     }
-    S[d.k] = d.k === 'age' ? +d.v : d.k === 'sound' ? d.v === 'true' : d.v;
+    S[d.k] = d.k === 'age' ? +d.v : d.k === 'sound' || d.k === 'vibe' ? d.v === 'true' : d.v;
+    if (d.k === 'vibe' && S.vibe) buzz(60);
     if (d.k === 'lang' && !S.setup) S.learn = S.lang === 'es' ? 'en' : S.lang === 'en' ? 'es' : 'both';
     save(); sfx('tap'); show(view);
   },
@@ -1097,7 +1140,7 @@ const ACT = {
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {
     if (!cur || !cur.hi) return;
-    cur.hi = 0; sfx('clap'); b.classList.add('hit');
+    cur.hi = 0; sfx('clap'); buzz([35, 25, 170]); b.classList.add('hit');
     // stars fly out of the paw, which sits at 79% / 20% of the picture
     for (let i = 0; i < 10; i++) floatEm(b.parentNode, pick(['✨', '⭐', '💜', '💥']), b.offsetLeft + b.offsetWidth * 0.79 - 14 + rnd(90) - 45, b.offsetTop + b.offsetHeight * 0.2 - 14 + rnd(70) - 35);
     later(800, walk);
