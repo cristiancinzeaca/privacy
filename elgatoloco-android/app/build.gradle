@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+
+// The game itself is the web folder next to this project (override with -PwebDir=...).
+def webDir = file(project.findProperty('webDir') ?: '../../elgatoloco')
+def webOut = layout.buildDirectory.dir('webassets')
+
+android {
+    namespace 'io.github.cristiancinzeaca.elgatoloco'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'io.github.cristiancinzeaca.elgatoloco'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets { main { assets.srcDirs = [webOut] } }
+    androidResources { noCompress += ['webp', 'mp3', 'woff2'] }
+    buildTypes { release { minifyEnabled false } }
+}
+
+tasks.register('syncWeb', Sync) {
+    from(webDir) { exclude 'tools/**' }
+    into webOut.map { it.dir('www') }
+}
+tasks.named('preBuild') { dependsOn 'syncWeb' }

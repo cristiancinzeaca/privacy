@@ -255,7 +255,10 @@ function buzz(pattern) {
   if (S.vibe === false) return;
   // phone motors need about 40 ms to spin up: shorter pulses are not felt at all
   const p = [].concat(pattern).map((v, i) => i % 2 ? Math.max(60, v) : Math.max(45, Math.round(v * 1.6)));
-  try { if (navigator.vibrate) return navigator.vibrate(p); } catch (e) {}
+  try {
+    if (window.ElGatoApp) { ElGatoApp.vibrate(p.join(',')); return true; } // Android app: the phone's own vibrator
+    if (navigator.vibrate) return navigator.vibrate(p);
+  } catch (e) {}
 }
 function sfx(name, i) {
   if (!S.sound) return;
@@ -553,6 +556,8 @@ function show(v) {
   hush();
   ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly })[v]();
 }
+// the Android back button: leave a game or page for the map; false lets the app close
+window.__back = () => { if (view === 'map' || view === 'title') return false; show('map'); return true; };
 function vTitle() {
   app.innerHTML = `<div class="title">
     <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button>
@@ -1481,7 +1486,7 @@ const ACT = {
   go(d) { sfx('tap'); show(d.v); },
   revive(d) { if (reviveCb) reviveCb(+d.i); },
   vtest() {
-    let r; try { r = navigator.vibrate ? navigator.vibrate([500, 200, 500]) : null; } catch (e) { r = false; }
+    let r; try { r = window.ElGatoApp ? (ElGatoApp.vibrate('500,200,500'), true) : navigator.vibrate ? navigator.vibrate([500, 200, 500]) : null; } catch (e) { r = false; }
     vibeMsg = r === null ? 'vNone' : r ? 'vSent' : 'vBlocked'; show(view);
   },
   dom(d, b) { if (domHit) domHit(d, b); },
