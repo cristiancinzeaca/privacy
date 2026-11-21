@@ -31,6 +31,14 @@ const STR = {
   g_whack: ['Prinde șoarecii', 'Atrapa ratones', 'Catch the mice'],
   g_memory: ['Perechi', 'Parejas', 'Pairs'],
   g_fly: ['Zbor printre nori', 'Vuelo entre nubes', 'Cloud flight'],
+  g_blocks: ['Sparge cuburile', 'Rompe los cubos', 'Block pop'],
+  g_kart: ['Cursa de carturi', 'Carrera de karts', 'Kart race'],
+  blocksHint: ['Atinge două sau mai multe cuburi lipite, de aceeași culoare', 'Toca dos o más cubos juntos del mismo color', 'Tap two or more touching blocks of the same colour'],
+  kartHint: ['Glisează stânga-dreapta. Depășește pisicile și ocolește conurile!', 'Desliza a izquierda y derecha. ¡Adelanta a los gatos y esquiva los conos!', 'Slide left and right. Overtake the cats and dodge the cones!'],
+  feed: ['Pauză de gustare! Hrănește pisicul cu toți peștii', '¡Pausa de merienda! Dale al gato todos los peces', 'Snack break! Give the cat all the fish'],
+  bubbles: ['Pauză de baloane! Sparge toate baloanele de săpun', '¡Pausa de pompas! Explota todas las pompas de jabón', 'Bubble break! Pop all the soap bubbles'],
+  hide: ['De-a v-ați ascunselea! În ce cutie e pisicul?', '¡Al escondite! ¿En qué caja está el gato?', 'Hide and seek! Which box is the cat in?'],
+  chase: ['Pauză de joacă! Atinge șoricelul și pisicul îl prinde', '¡Pausa de juego! Enséñale el ratón al gato', 'Play break! Show the cat the mouse'],
   runHint: ['Atinge ca să sari. Atinge de două ori pentru salt dublu!', 'Toca para saltar. ¡Toca dos veces para un salto doble!', 'Tap to jump. Tap twice for a double jump!'],
   catchHint: ['Mișcă pisicul și prinde peștii. Ferește-te de apă!', 'Mueve al gato y atrapa los peces. ¡Cuidado con el agua!', 'Move the cat and catch the fish. Watch out for water!'],
   whackHint: ['Atinge șoarecii, dar nu ariciul!', 'Toca los ratones, ¡pero no el erizo!', 'Tap the mice, but not the hedgehog!'],
@@ -556,7 +564,7 @@ const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map
 function show(v) {
   cur = null; view = v; resetArmed = false;
   hush();
-  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly })[v]();
+  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart })[v]();
 }
 // the Android back button: leave a game or page for the map; false lets the app close
 window.__back = () => { if (view === 'map' || view === 'title') return false; show('map'); return true; };
@@ -646,10 +654,10 @@ function startLevel(world, idx) {
   used = new Set();
   const a = idx % 4, qz = plan(world, idx);
   const seq = [
-    { k: 'arc', g: GAME_ORDER[a] }, { k: 'quiz', g: qz[0] }, { k: 'break', g: idx % 2 ? 'pet' : 'tickle' },
+    { k: 'arc', g: GAME_ORDER[a] }, { k: 'quiz', g: qz[0] }, { k: 'break', g: nextBreak() },
     { k: 'arc', g: GAME_ORDER[(a + 1) % 4] }, { k: 'quiz', g: qz[1] }, { k: 'arc', g: GAME_ORDER[(a + 2) % 4] },
   ];
-  if (idx >= 6) seq.push({ k: 'quiz', g: qz[2] }, { k: 'arc', g: GAME_ORDER[(a + 3) % 4] });
+  if (idx >= 6) seq.push({ k: 'break', g: nextBreak() }, { k: 'quiz', g: qz[2] }, { k: 'arc', g: GAME_ORDER[(a + 3) % 4] });
   cur = { world, idx, w, step: 0, pos: 0, mistakes: 0, stageMist: 0, seq, ch: null, hi: 0, hiId: 0 };
   view = 'level';
   app.innerHTML = `<div class="level w-${world}">
@@ -675,7 +683,7 @@ function walk() {
     if (last) return finish();
     cur.stageMist = 0; cur.wrong = 0; cur.lock = false; cur.ch = null; cur.arc = null; cur.pz = null;
     if (st.k === 'quiz') { cur.ch = G[st.g](S.age, hard(cur.idx)); renderCh(); }
-    else if (st.k === 'break') petBreak(st.g);
+    else if (st.k === 'break') (BREAK_FN[st.g] || petBreak)(st.g);
     else if (st.g === 'puzzle') puzzle();
     else arcade(st.g);
   });
@@ -759,6 +767,103 @@ function petBreak(mode) {
   z.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') mv(e); });
   z.addEventListener('pointerup', () => { lx = null; });
 }
+
+/* the other breaks: short toys with no wrong answers. Each one fills the meter and then the walk goes on */
+const BREAKS = ['tickle', 'pet', 'feed', 'bubbles', 'hide', 'chase'];
+let breakLog = [];
+// a break that was not among the last four, so a child rarely sees the same one twice in a row of levels
+function nextBreak() {
+  const b = pick(BREAKS.filter(x => !breakLog.includes(x)));
+  breakLog = [...breakLog, b].slice(-4);
+  return b;
+}
+function breakPanel(mode, inner) {
+  const p = $('#panel');
+  p.innerHTML = `<p class="q">${T(mode)}</p><div class="petzone ${mode}">${inner}</div><div class="meter"><i></i></div>`;
+  p.className = 'panel show'; sfx('meow'); say(T(mode), S.lang, true);
+  const z = $('.petzone'), bar = $('.meter i');
+  return { z, kitty: z.querySelector('.cat'), fill: f => { bar.style.width = Math.min(100, f * 100) + '%'; }, end: () => { sfx('good'); cur.pos++; later(1000, walk); } };
+}
+const hop = el => { el.classList.remove('boing'); void el.offsetWidth; el.classList.add('boing'); };
+// snack: fish lie around the cat; every tapped fish flies into its mouth
+function feedBreak(mode) {
+  const n = 7, b = breakPanel(mode, `<div class="cat">${cat('purr')}</div>`);
+  let got = 0;
+  for (let i = 0; i < n; i++) {
+    const a = (i + Math.random() * 0.5) / n * Math.PI * 2, f = document.createElement('button');
+    f.className = 'toy'; f.innerHTML = pic('fish'); f.setAttribute('aria-label', '🐟');
+    f.style.left = 50 + 39 * Math.cos(a) + '%'; f.style.top = 46 + 36 * Math.sin(a) + '%';
+    f.addEventListener('pointerdown', () => {
+      if (f.classList.contains('gone') || !cur) return;
+      f.classList.add('gone'); f.style.left = '50%'; f.style.top = '46%';
+      sfx('tap'); buzz(18); hop(b.kitty); floatEm(b.z, pick(['😋', '💗', '✨']), b.z.clientWidth / 2 - 14, b.z.clientHeight * 0.2);
+      b.fill(++got / n);
+      if (got === n) { sfx('meow'); b.end(); }
+    });
+    b.z.appendChild(f);
+  }
+}
+// soap bubbles drift up around the cat until every one is popped
+function bubbleBreak(mode) {
+  const n = 10, b = breakPanel(mode, `<div class="cat">${cat('purr')}</div>`);
+  let got = 0;
+  for (let i = 0; i < n; i++) {
+    const u = document.createElement('button'), s = 54 + rnd(34), d = 4 + Math.random() * 3;
+    u.className = 'bub'; u.setAttribute('aria-label', '🫧');
+    u.style.cssText = `left:${4 + (i * 37 + rnd(12)) % 80}%;width:${s}px;height:${s}px;animation-duration:${d.toFixed(2)}s;animation-delay:-${(Math.random() * d).toFixed(2)}s`;
+    u.addEventListener('pointerdown', () => {
+      if (u.classList.contains('pop') || !cur) return;
+      const r = u.getBoundingClientRect(), zr = b.z.getBoundingClientRect();
+      u.classList.add('pop'); setTimeout(() => u.remove(), 180);
+      sfx('gem', got % 4); buzz(15); floatEm(b.z, '✨', r.left - zr.left + s / 2 - 14, r.top - zr.top);
+      b.fill(++got / n);
+      if (got === n) { hop(b.kitty); b.end(); }
+    });
+    b.z.appendChild(u);
+  }
+}
+// hide and seek: the cat is in one of three boxes (the right one wobbles now and then); three rounds
+function hideBreak(mode) {
+  const rounds = 3, b = breakPanel(mode, `<div class="boxes">${[0, 1, 2].map(i => `<button class="box" data-i="${i}" aria-label="${i + 1}"><span class="peek">${pic('cat_head')}</span>${pic('ob_gift', '🎁')}</button>`).join('')}</div>`);
+  const boxes = [...b.z.querySelectorAll('.box')];
+  let spot = -1, found = 0, lock = false;
+  const deal = () => {
+    spot = pick([0, 1, 2].filter(i => i !== spot)); lock = false;
+    boxes.forEach((x, i) => { x.className = 'box' + (i === spot ? ' has' : ''); });
+  };
+  boxes.forEach((x, i) => x.addEventListener('pointerdown', () => {
+    if (lock || !cur || x.classList.contains('empty')) return;
+    if (i !== spot) { x.classList.add('empty'); sfx('whoosh'); floatEm(x, '💨', x.clientWidth / 2 - 14, 0); return; }
+    lock = true; x.classList.add('found'); sfx('meow'); buzz([20, 30, 45]); floatEm(x, pick(['😻', '💜', '✨']), x.clientWidth / 2 - 14, -10);
+    b.fill(++found / rounds);
+    if (found === rounds) b.end(); else later(1000, deal);
+  }));
+  deal();
+}
+// a mouse keeps popping up somewhere else; tap it and the cat pounces there
+function chaseBreak(mode) {
+  const n = 6, b = breakPanel(mode, `<div class="cat">${cat('purr')}</div><button class="toy" aria-label="🐭">${pic('g_mouse')}</button>`);
+  const m = b.z.querySelector('.toy');
+  let got = 0, turn = 0, mx = 50, my = 52;
+  b.kitty.style.left = '50%'; b.kitty.style.top = '52%';
+  const place = () => {
+    if (got >= n) return;
+    let x, y;
+    do { x = 12 + rnd(76); y = 16 + rnd(66); } while (Math.hypot(x - mx, y - my) < 30);
+    mx = x; my = y; m.style.left = x + '%'; m.style.top = y + '%'; m.classList.remove('gone');
+    const t = ++turn; later(1500, () => { if (t === turn) place(); });
+  };
+  m.addEventListener('pointerdown', () => {
+    if (m.classList.contains('gone') || !cur) return;
+    turn++; m.classList.add('gone');
+    b.kitty.style.left = mx + '%'; b.kitty.style.top = my + '%';
+    sfx(got % 2 ? 'meow' : 'tap'); buzz(22); floatEm(b.z, pick(['💥', '✨', '😹']), b.z.clientWidth * mx / 100 - 14, b.z.clientHeight * my / 100 - 40);
+    b.fill(++got / n);
+    if (got === n) { hop(b.kitty); b.end(); } else later(450, place);
+  });
+  place();
+}
+const BREAK_FN = { feed: feedBreak, bubbles: bubbleBreak, hide: hideBreak, chase: chaseBreak };
 
 /* picture puzzle: swap tiles, then name the picture */
 function puzzle() {
@@ -1162,9 +1267,9 @@ document.addEventListener('keydown', e => {
 
 /* ---------- free play: more mini-games, challenges and trophies ---------- */
 // [view id, icon, score unit]
-const GAMES = [['snake', 'cat_head', '🐟'], ['run', 'ic_run', '⭐'], ['catch', 'ic_catch', '🐟'], ['whack', 'ic_whack', '🐭'], ['memory', 'ic_memory', '🃏'], ['fly', 'ic_fly', '⭐']];
+const GAMES = [['snake', 'cat_head', '🐟'], ['run', 'ic_run', '⭐'], ['catch', 'ic_catch', '🐟'], ['whack', 'ic_whack', '🐭'], ['memory', 'ic_memory', '🃏'], ['fly', 'ic_fly', '⭐'], ['blocks', 'ic_blocks', '🧊'], ['kart', 'ic_kart', '🏁']];
 // [id, bronze, silver, gold]: a game id counts its best score, the others count something collected over time
-const QUESTS = [['snake', 10, 25, 50], ['run', 12, 30, 60], ['catch', 20, 45, 90], ['whack', 15, 28, 40], ['memory', 6, 12, 20], ['fly', 8, 20, 40],
+const QUESTS = [['snake', 10, 25, 50], ['run', 12, 30, 60], ['catch', 20, 45, 90], ['whack', 15, 28, 40], ['memory', 6, 12, 20], ['fly', 8, 20, 40], ['blocks', 70, 110, 160], ['kart', 12, 30, 60],
   ['plays', 5, 25, 75], ['stars', 15, 45, 90], ['stickers', 5, 15, 30], ['smart', 3, 10, 25], ['daily', 1, 5, 15]];
 const stat = () => (S.stat = S.stat || { plays: 0, smart: 0, daily: 0 });
 const questVal = id => (id === 'stars' ? totalStars() : id === 'stickers' ? S.stickers.length : id in stat() ? stat()[id] : S.best[id] || 0);
@@ -1473,6 +1578,157 @@ function vMemory() {
   deal();
 }
 
+/* tap a group of two or more touching blocks of one colour: they burst, the rest fall and new ones drop in */
+function vBlocks() {
+  const g = shell('blocks', '🧊', T('blocksHint')), { ctx } = g;
+  const COLS = 7, ROWS = Math.max(7, Math.min(11, Math.floor(g.H / (g.W / COLS)))), cs =Math.floor(Math.min(g.W / COLS, g.H / ROWS)), ox = (g.W - cs * COLS) / 2, oy = (g.H + cs * ROWS) / 2;
+  const KIND = [['#ff5d6c', '♥'], ['#3d8bfd', '●'], ['#2fbf71', '▲'], ['#f5a524', '★'], ['#9b6bff', '■']], nk = S.age === 0 ? 4 : 5;
+  // grid[c] is one column, bottom block first; y is where the block is drawn (in rows) while it falls to its place
+  let grid, moves = 25, bits = [], idle = 0;
+  const fresh = y => ({ k: rnd(nk), y });
+  const group = (c, r) => {
+    const k = grid[c][r].k, seen = new Set([c * 100 + r]), todo = [[c, r]];
+    while (todo.length) {
+      const [x, y] = todo.pop();
+      for (const [a, b] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (a < 0 || a >= COLS || b < 0 || b >= ROWS || seen.has(a * 100 + b) || grid[a][b].k !== k) continue;
+        seen.add(a * 100 + b); todo.push([a, b]);
+      }
+    }
+    return [...seen].map(v => [Math.floor(v / 100), v % 100]);
+  };
+  const playable = () => grid.some((col, c) => col.some((_, r) => (c + 1 < COLS && grid[c + 1][r].k === col[r].k) || (r + 1 < ROWS && col[r + 1].k === col[r].k)));
+  const deal = () => { do { grid = Array.from({ length: COLS }, () => Array.from({ length: ROWS }, (_, r) => fresh(r + ROWS))); } while (!playable()); };
+  const tap = (c, r) => {
+    if (g.over || moves <= 0 || c < 0 || c >= COLS || r < 0 || r >= ROWS || grid[c][r].y > r + 0.4) return 0;
+    const grp = group(c, r), n = grp.length, x = ox + (c + 0.5) * cs, y = oy - (r + 0.5) * cs;
+    if (n < 2) { sfx('whoosh'); grid[c][r].sh = 0.3; return 0; }
+    const pts = n < 4 ? n : n < 7 ? n * 2 : n * 3;
+    moves--; g.add(pts); g.pop(x, y, n >= 7 ? `WOW +${pts}` : '+' + pts); sfx(n >= 5 ? 'good' : 'gem', grid[c][r].k % 4); buzz(n >= 5 ? [25, 30, 60] : 18);
+    for (const [a, b] of grp) {
+      for (let i = 0; i < 3; i++) bits.push({ x: ox + (a + 0.5) * cs, y: oy - (b + 0.5) * cs, vx: (Math.random() - 0.5) * 260, vy: -80 - Math.random() * 220, c: KIND[grid[a][b].k][0], life: 0.5 });
+      grid[a][b] = null;
+    }
+    grid = grid.map(col => { const keep = col.filter(Boolean), add = ROWS - keep.length; for (let i = 0; i < add; i++) keep.push(fresh(ROWS + i)); return keep; });
+    if (!playable()) deal();
+    return n;
+  };
+  g.cv.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const r = g.cv.getBoundingClientRect();
+    tap(Math.floor((e.clientX - r.left - ox) / cs), Math.floor((oy - (e.clientY - r.top)) / cs));
+  });
+  g.state = () => ({ grid, moves, tap, group, COLS, ROWS });
+  deal();
+  g.loop(dt => {
+    g.info('👆 ' + moves);
+    const bgd = ctx.createLinearGradient(0, 0, 0, g.H); bgd.addColorStop(0, '#2b2466'); bgd.addColorStop(1, '#5a3fd6');
+    ctx.fillStyle = bgd; ctx.fillRect(0, 0, g.W, g.H);
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(ox - 4, oy - cs * ROWS - 4, cs * COLS + 8, cs * ROWS + 8, 14); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.rect(ox - 4, oy - cs * ROWS - 4, cs * COLS + 8, cs * ROWS + 8); ctx.clip();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 ${Math.round(cs * 0.5)}px ${GFONT}`;
+    let falling = false;
+    grid.forEach((col, c) => col.forEach((b, r) => {
+      if (b.y > r) { b.y = Math.max(r, b.y - dt * 16); falling = true; }
+      if (b.sh) b.sh = Math.max(0, b.sh - dt);
+      const x = ox + c * cs + (b.sh ? Math.sin(b.sh * 60) * 3 : 0), y = oy - (b.y + 1) * cs, p = Math.max(2, cs * 0.05), [col2, sym] = KIND[b.k];
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.roundRect(x + p, y + p + 3, cs - p * 2, cs - p * 2, cs * 0.2); ctx.fill();
+      ctx.fillStyle = col2; ctx.beginPath(); ctx.roundRect(x + p, y + p, cs - p * 2, cs - p * 2 - 2, cs * 0.2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.roundRect(x + p * 2, y + p * 2, cs - p * 4, cs * 0.3, cs * 0.14); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillText(sym, x + cs / 2, y + cs / 2 + 1);
+    }));
+    ctx.restore();
+    bits = bits.filter(b => (b.life -= dt) > 0);
+    for (const b of bits) { b.vy += 900 * dt; b.x += b.vx * dt; b.y += b.vy * dt; ctx.globalAlpha = b.life * 2; ctx.fillStyle = b.c; ctx.beginPath(); ctx.roundRect(b.x - 5, b.y - 5, 10, 10, 3); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    g.drawPops(dt);
+    // out of moves: let the last blocks land, then end (a right answer gives a few more moves)
+    idle = moves <= 0 && !falling ? idle + dt : 0;
+    if (idle > 0.6) { idle = 0; g.end(() => { moves = 6; }); }
+  });
+  sfx('meow');
+}
+
+/* cats race karts up the road: slide to steer, overtake the others, keep away from cones */
+const RIVALS = [['#3d8bfd', 'brightness(2.6) sepia(1) saturate(3)'], ['#2fbf71', 'brightness(3.2) grayscale(1)'], ['#9b6bff', 'brightness(2.6) sepia(1) saturate(3) hue-rotate(170deg)'], ['#f5a524', 'brightness(2.6) sepia(1) saturate(3) hue-rotate(280deg)']];
+const TINT = {};
+// the cat's head recoloured for a rival driver (browsers without canvas filters just get the same cat)
+function tintHead(i) {
+  if (TINT[i]) return TINT[i];
+  if (!headImg.naturalWidth) return headImg;
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  const x = c.getContext('2d'); x.filter = RIVALS[i][1]; x.drawImage(headImg, 0, 0, 160, 160);
+  return (TINT[i] = c);
+}
+function vKart() {
+  const g = shell('kart', '🏁', T('kartHint')), { ctx } = g, easy = S.age === 0, k = g.H / 520;
+  const kh = Math.min(g.H * 0.2, 112), kw = kh * 0.66, rl = g.W * 0.08, rr = g.W * 0.92, lane = (rr - rl) / 3, py = g.H * 0.8, top = (easy ? 360 : 480) * k;
+  let cx = g.W / 2, tx = cx, speed = (easy ? 190 : 230) * k, dist = 0, next = 200 * k, lives = 3, safe = 0, items = [];
+  const hearts = () => g.info('❤️'.repeat(lives) + '🤍'.repeat(3 - lives));
+  const clampX = x => Math.max(rl + kw * 0.55, Math.min(rr - kw * 0.55, x));
+  const aim = e => { tx = clampX(e.clientX - g.cv.getBoundingClientRect().left); };
+  g.cv.addEventListener('pointerdown', e => { e.preventDefault(); aim(e); });
+  g.cv.addEventListener('pointermove', aim);
+  gameKey = key => { if (key === 'ArrowLeft') tx = clampX(tx - lane); if (key === 'ArrowRight') tx = clampX(tx + lane); };
+  g.state = () => ({ items, cx, lives, speed, kw, kh, py, lane, rl, set: x => { tx = cx = x; } });
+  const kart = (x, y, col, head, tilt) => {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(0, kh * 0.08, kw * 0.6, kh * 0.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#26233a';
+    for (const [wx, wy] of [[-1, -0.3], [1, -0.3], [-1, 0.32], [1, 0.32]]) { ctx.beginPath(); ctx.roundRect(wx * kw * 0.5 - kw * 0.13, wy * kh - kh * 0.11, kw * 0.26, kh * 0.22, 5); ctx.fill(); }
+    ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(-kw * 0.36, -kh * 0.5, kw * 0.72, kh, kw * 0.26); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(-kw * 0.07, -kh * 0.5, kw * 0.14, kh * 0.3);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.roundRect(-kw * 0.42, kh * 0.4, kw * 0.84, kh * 0.1, 4); ctx.fill();
+    if (head.width) ctx.drawImage(head, -kw * 0.52, -kh * 0.3, kw * 1.04, kw * 1.04);
+    ctx.restore();
+  };
+  hearts();
+  g.loop(dt => {
+    speed = Math.min(top, speed + dt * 4 * k); dist += speed * dt; safe = Math.max(0, safe - dt);
+    cx += (tx - cx) * Math.min(1, dt * 14);
+    if (dist >= next) {
+      const lanes = shuffle([0, 1, 2]), two = Math.random() < Math.min(0.55, 0.15 + g.t / 120), r = Math.random();
+      const mk = (l, kind) => ({ kind, x: rl + lane * (l + 0.5) + (Math.random() - 0.5) * lane * 0.3, y: -kh, v: kind === 'cat' ? 0.4 + Math.random() * 0.2 : 1, i: rnd(RIVALS.length), ph: Math.random() * 6 });
+      items.push(mk(lanes[0], r < 0.62 ? 'cat' : r < 0.84 ? 'cone' : 'fish'));
+      if (two) items.push(mk(lanes[1], Math.random() < 0.5 ? 'cone' : 'cat'));
+      next = dist + kh * (3.4 + Math.random() * 1.6);
+    }
+    // grass, road, kerbs and lane marks all slide down with the distance driven
+    ctx.fillStyle = '#7cc66a'; ctx.fillRect(0, 0, g.W, g.H);
+    ctx.fillStyle = '#6ab85a'; for (let y = (dist % 120) - 120; y < g.H; y += 120) ctx.fillRect(0, y, g.W, 60);
+    ctx.fillStyle = '#5b5e72'; ctx.fillRect(rl, 0, rr - rl, g.H);
+    for (let y = (dist % 60) - 60; y < g.H; y += 60) { ctx.fillStyle = '#ff5d6c'; ctx.fillRect(rl - 8, y, 8, 30); ctx.fillRect(rr, y, 8, 30); ctx.fillStyle = '#fff'; ctx.fillRect(rl - 8, y + 30, 8, 30); ctx.fillRect(rr, y + 30, 8, 30); }
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    for (let y = (dist % 90) - 90; y < g.H; y += 90) { ctx.fillRect(rl + lane - 3, y, 6, 44); ctx.fillRect(rl + lane * 2 - 3, y, 6, 44); }
+    for (const it of items) {
+      it.y += speed * it.v * dt;
+      const ix = it.kind === 'cat' && !easy ? it.x + Math.sin(g.t * 1.6 + it.ph) * lane * 0.16 : it.x;
+      const hitX = Math.abs(ix - cx), hitY = Math.abs(it.y - py);
+      if (it.kind === 'cat') {
+        if (it.spin) { it.spin += dt * 9; it.x += it.dir * 260 * dt; }
+        kart(ix, it.y, RIVALS[it.i][0], tintHead(it.i), it.spin || 0);
+        if (!it.done && !it.spin && it.y > py + kh * 0.75) { it.done = true; g.add(1); g.pop(cx, py - kh * 0.8, '+1'); sfx('tap'); }
+      } else if (it.kind === 'cone') {
+        ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(it.x, it.y + kh * 0.16, kh * 0.2, kh * 0.08, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ff7a2f'; ctx.beginPath(); ctx.moveTo(it.x, it.y - kh * 0.24); ctx.lineTo(it.x + kh * 0.16, it.y + kh * 0.16); ctx.lineTo(it.x - kh * 0.16, it.y + kh * 0.16); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillRect(it.x - kh * 0.085, it.y - kh * 0.04, kh * 0.17, kh * 0.07);
+      } else if (!it.done) g.img(fishImg, it.x, it.y, kh * 0.34);
+      if (it.done || it.spin) continue;
+      if (it.kind === 'fish') { if (hitX < kw * 0.7 && hitY < kh * 0.6) { it.done = true; g.add(2); g.pop(it.x, it.y, '+2'); sfx('good'); buzz(15); } continue; }
+      const wide = it.kind === 'cat' ? kw * 0.78 : kw * 0.5 + kh * 0.12, tall = it.kind === 'cat' ? kh * 0.86 : kh * 0.6;
+      if (!safe && hitX < wide && hitY < tall) {
+        it.done = true; if (it.kind === 'cat') { it.spin = 0.01; it.dir = ix < cx ? -1 : 1; }
+        lives--; safe = 1.2; hearts(); sfx('bad'); buzz([70, 50, 70]); g.pop(cx, py - kh * 0.8, '💥'); speed *= 0.7;
+        if (lives <= 0) g.end(() => { lives = 1; hearts(); items = []; safe = 1.5; });
+      }
+    }
+    items = items.filter(it => it.y < g.H + kh && !(it.kind !== 'cat' && it.done && it.kind === 'fish'));
+    if (!safe || Math.floor(g.t * 12) % 2) kart(cx, py, '#ff5d6c', headImg, Math.max(-0.3, Math.min(0.3, (tx - cx) / lane * 0.5)));
+    g.drawPops(dt);
+  });
+  sfx('meow');
+}
+
 /* ---------- input ---------- */
 const ACT = {
   set(d) {
@@ -1567,6 +1823,6 @@ app.addEventListener('click', e => {
   if (b && !b.disabled) ACT[b.dataset.act](b.dataset, b);
 });
 
-window.__chispa = { state: S, cur: () => cur, G, plan };
+window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk() };
 show(S.setup ? 'map' : 'title');
 })();
