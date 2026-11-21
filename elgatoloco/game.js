@@ -1580,12 +1580,12 @@ function vMemory() {
 
 /* tap a group of two or more touching blocks of one colour: they burst, the rest fall and new ones drop in */
 function vBlocks() {
-  const g = shell('blocks', '🧊', T('blocksHint')), { ctx } = g;
+  const g = shell('blocks', '🧊', T('blocksHint')), { ctx } = g, cube = [0, 1, 2, 3, 4].map(i => gi('b_' + i)), bg = gi('bg_mix');
   const COLS = 7, ROWS = Math.max(7, Math.min(11, Math.floor(g.H / (g.W / COLS)))), cs =Math.floor(Math.min(g.W / COLS, g.H / ROWS)), ox = (g.W - cs * COLS) / 2, oy = (g.H + cs * ROWS) / 2;
   const KIND = [['#ff5d6c', '♥'], ['#3d8bfd', '●'], ['#2fbf71', '▲'], ['#f5a524', '★'], ['#9b6bff', '■']], nk = S.age === 0 ? 4 : 5;
   // grid[c] is one column, bottom block first; y is where the block is drawn (in rows) while it falls to its place
   let grid, moves = 25, bits = [], idle = 0;
-  const fresh = y => ({ k: rnd(nk), y });
+  const fresh = y => ({ k: rnd(nk), y, sq: 0 });
   const group = (c, r) => {
     const k = grid[c][r].k, seen = new Set([c * 100 + r]), todo = [[c, r]];
     while (todo.length) {
@@ -1622,20 +1622,21 @@ function vBlocks() {
   deal();
   g.loop(dt => {
     g.info('👆 ' + moves);
-    const bgd = ctx.createLinearGradient(0, 0, 0, g.H); bgd.addColorStop(0, '#2b2466'); bgd.addColorStop(1, '#5a3fd6');
-    ctx.fillStyle = bgd; ctx.fillRect(0, 0, g.W, g.H);
-    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(ox - 4, oy - cs * ROWS - 4, cs * COLS + 8, cs * ROWS + 8, 14); ctx.fill();
+    g.back(bg, g.t * 6);
+    ctx.fillStyle = 'rgba(24,18,58,.55)'; ctx.fillRect(0, 0, g.W, g.H);
+    ctx.fillStyle = 'rgba(20,14,60,.55)'; ctx.beginPath(); ctx.roundRect(ox - 4, oy - cs * ROWS - 4, cs * COLS + 8, cs * ROWS + 8, 14); ctx.fill();
     ctx.save(); ctx.beginPath(); ctx.rect(ox - 4, oy - cs * ROWS - 4, cs * COLS + 8, cs * ROWS + 8); ctx.clip();
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 ${Math.round(cs * 0.5)}px ${GFONT}`;
     let falling = false;
     grid.forEach((col, c) => col.forEach((b, r) => {
       if (b.y > r) { b.y = Math.max(r, b.y - dt * 16); falling = true; }
       if (b.sh) b.sh = Math.max(0, b.sh - dt);
-      const x = ox + c * cs + (b.sh ? Math.sin(b.sh * 60) * 3 : 0), y = oy - (b.y + 1) * cs, p = Math.max(2, cs * 0.05), [col2, sym] = KIND[b.k];
-      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.roundRect(x + p, y + p + 3, cs - p * 2, cs - p * 2, cs * 0.2); ctx.fill();
-      ctx.fillStyle = col2; ctx.beginPath(); ctx.roundRect(x + p, y + p, cs - p * 2, cs - p * 2 - 2, cs * 0.2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.roundRect(x + p * 2, y + p * 2, cs - p * 4, cs * 0.3, cs * 0.14); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillText(sym, x + cs / 2, y + cs / 2 + 1);
+      const x = ox + c * cs + (b.sh ? Math.sin(b.sh * 60) * 3 : 0), y = oy - (b.y + 1) * cs, img = cube[b.k];
+      // a block squashes a little as it lands
+      const land = b.y > r ? 0 : Math.max(0, (b.sq = Math.max(0, (b.sq || 0) - dt * 5))), sx = 1 + land * 0.12, sy = 1 - land * 0.14;
+      if (b.y > r) b.sq = 1;
+      if (img.naturalWidth) ctx.drawImage(img, x + cs / 2 - cs * 0.48 * sx, y + cs - cs * 0.96 * sy, cs * 0.96 * sx, cs * 0.96 * sy);
+      else { ctx.fillStyle = KIND[b.k][0]; ctx.beginPath(); ctx.roundRect(x + 2, y + 2, cs - 4, cs - 4, cs * 0.2); ctx.fill(); }
     }));
     ctx.restore();
     bits = bits.filter(b => (b.life -= dt) > 0);
@@ -1650,20 +1651,11 @@ function vBlocks() {
 }
 
 /* cats race karts up the road: slide to steer, overtake the others, keep away from cones */
-const RIVALS = [['#3d8bfd', 'brightness(2.6) sepia(1) saturate(3)'], ['#2fbf71', 'brightness(3.2) grayscale(1)'], ['#9b6bff', 'brightness(2.6) sepia(1) saturate(3) hue-rotate(170deg)'], ['#f5a524', 'brightness(2.6) sepia(1) saturate(3) hue-rotate(280deg)']];
-const TINT = {};
-// the cat's head recoloured for a rival driver (browsers without canvas filters just get the same cat)
-function tintHead(i) {
-  if (TINT[i]) return TINT[i];
-  if (!headImg.naturalWidth) return headImg;
-  const c = document.createElement('canvas'); c.width = c.height = 160;
-  const x = c.getContext('2d'); x.filter = RIVALS[i][1]; x.drawImage(headImg, 0, 0, 160, 160);
-  return (TINT[i] = c);
-}
 function vKart() {
   const g = shell('kart', '🏁', T('kartHint')), { ctx } = g, easy = S.age === 0, k = g.H / 520;
-  const kh = Math.min(g.H * 0.2, 112), kw = kh * 0.66, rl = g.W * 0.08, rr = g.W * 0.92, lane = (rr - rl) / 3, py = g.H * 0.8, top = (easy ? 360 : 480) * k;
-  let cx = g.W / 2, tx = cx, speed = (easy ? 190 : 230) * k, dist = 0, next = 200 * k, lives = 3, safe = 0, items = [];
+  const me = gi('k_player'), rivals = [0, 1, 2, 3].map(i => gi('k_rival_' + i)), cone = gi('k_cone'), deco = [gi('k_tree'), gi('k_bush'), gi('k_tyres'), gi('k_tree')];
+  const rl = g.W * 0.13, rr = g.W * 0.87, lane = (rr - rl) / 3, kh = Math.min(g.H * 0.17, lane * 0.98), kw = kh * 0.74, py = g.H * 0.8, top = (easy ? 360 : 480) * k;
+  let cx = g.W / 2, tx = cx, speed = (easy ? 190 : 230) * k, dist = 0, next = 200 * k, nextDeco = 0, lives = 3, safe = 0, items = [], side = [], puffs = [], puffT = 0;
   const hearts = () => g.info('❤️'.repeat(lives) + '🤍'.repeat(3 - lives));
   const clampX = x => Math.max(rl + kw * 0.55, Math.min(rr - kw * 0.55, x));
   const aim = e => { tx = clampX(e.clientX - g.cv.getBoundingClientRect().left); };
@@ -1671,59 +1663,73 @@ function vKart() {
   g.cv.addEventListener('pointermove', aim);
   gameKey = key => { if (key === 'ArrowLeft') tx = clampX(tx - lane); if (key === 'ArrowRight') tx = clampX(tx + lane); };
   g.state = () => ({ items, cx, lives, speed, kw, kh, py, lane, rl, set: x => { tx = cx = x; } });
-  const kart = (x, y, col, head, tilt) => {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
-    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(0, kh * 0.08, kw * 0.6, kh * 0.5, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#26233a';
-    for (const [wx, wy] of [[-1, -0.3], [1, -0.3], [-1, 0.32], [1, 0.32]]) { ctx.beginPath(); ctx.roundRect(wx * kw * 0.5 - kw * 0.13, wy * kh - kh * 0.11, kw * 0.26, kh * 0.22, 5); ctx.fill(); }
-    ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(-kw * 0.36, -kh * 0.5, kw * 0.72, kh, kw * 0.26); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(-kw * 0.07, -kh * 0.5, kw * 0.14, kh * 0.3);
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.roundRect(-kw * 0.42, kh * 0.4, kw * 0.84, kh * 0.1, 4); ctx.fill();
-    if (head.width) ctx.drawImage(head, -kw * 0.52, -kh * 0.3, kw * 1.04, kw * 1.04);
-    ctx.restore();
+  const shadow = (x, y, w, h) => { ctx.fillStyle = 'rgba(15,12,40,.28)'; ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, 0, 7); ctx.fill(); };
+  const kart = (img, x, y, tilt) => {
+    shadow(x, y + kh * 0.36, kh * 0.5, kh * 0.16);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); g.img(img, 0, 0, kh); ctx.restore();
   };
+  // the road is drawn once into a tile that repeats every 240 px, so every frame is two picture copies
+  const TILE = 240, road = document.createElement('canvas');
+  road.width = Math.ceil(g.W); road.height = TILE;
+  (() => {
+    const x = road.getContext('2d');
+    for (let y = 0; y < TILE; y += 60) { x.fillStyle = (y / 60) % 2 ? '#7fce63' : '#74c259'; x.fillRect(0, y, g.W, 60); }
+    x.fillStyle = 'rgba(255,255,255,.16)';
+    for (let i = 0; i < 26; i++) { const gx = (i * 53) % rl, gy = (i * 97) % TILE; x.fillRect(gx, gy, 3, 7); x.fillRect(g.W - gx - 3, (gy + 40) % TILE, 3, 7); }
+    const as = x.createLinearGradient(rl, 0, rr, 0); as.addColorStop(0, '#4a4c63'); as.addColorStop(0.5, '#62657e'); as.addColorStop(1, '#4a4c63');
+    x.fillStyle = as; x.fillRect(rl, 0, rr - rl, TILE);
+    x.fillStyle = 'rgba(255,255,255,.05)';
+    for (let i = 0; i < 90; i++) x.fillRect(rl + ((i * 71) % (rr - rl)), (i * 37) % TILE, 2 + (i % 3), 2);
+    for (let y = 0; y < TILE; y += 40) { x.fillStyle = (y / 40) % 2 ? '#fff' : '#ff4d5e'; x.fillRect(rl - 9, y, 9, 40); x.fillRect(rr, y, 9, 40); }
+    x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(rl, 0, 4, TILE); x.fillRect(rr - 4, 0, 4, TILE);
+    x.fillStyle = 'rgba(255,255,255,.85)';
+    for (let y = 10; y < TILE; y += 80) for (const lx of [rl + lane, rl + lane * 2]) { x.beginPath(); x.roundRect(lx - 3, y, 6, 42, 3); x.fill(); }
+  })();
   hearts();
   g.loop(dt => {
     speed = Math.min(top, speed + dt * 4 * k); dist += speed * dt; safe = Math.max(0, safe - dt);
     cx += (tx - cx) * Math.min(1, dt * 14);
     if (dist >= next) {
       const lanes = shuffle([0, 1, 2]), two = Math.random() < Math.min(0.55, 0.15 + g.t / 120), r = Math.random();
-      const mk = (l, kind) => ({ kind, x: rl + lane * (l + 0.5) + (Math.random() - 0.5) * lane * 0.3, y: -kh, v: kind === 'cat' ? 0.4 + Math.random() * 0.2 : 1, i: rnd(RIVALS.length), ph: Math.random() * 6 });
+      const mk = (l, kind) => ({ kind, x: rl + lane * (l + 0.5) + (Math.random() - 0.5) * lane * 0.2, y: -kh, v: kind === 'cat' ? 0.4 + Math.random() * 0.2 : 1, i: rnd(4), ph: Math.random() * 6 });
       items.push(mk(lanes[0], r < 0.62 ? 'cat' : r < 0.84 ? 'cone' : 'fish'));
       if (two) items.push(mk(lanes[1], Math.random() < 0.5 ? 'cone' : 'cat'));
-      next = dist + kh * (3.4 + Math.random() * 1.6);
+      next = dist + kh * (3.6 + Math.random() * 1.8);
     }
-    // grass, road, kerbs and lane marks all slide down with the distance driven
-    ctx.fillStyle = '#7cc66a'; ctx.fillRect(0, 0, g.W, g.H);
-    ctx.fillStyle = '#6ab85a'; for (let y = (dist % 120) - 120; y < g.H; y += 120) ctx.fillRect(0, y, g.W, 60);
-    ctx.fillStyle = '#5b5e72'; ctx.fillRect(rl, 0, rr - rl, g.H);
-    for (let y = (dist % 60) - 60; y < g.H; y += 60) { ctx.fillStyle = '#ff5d6c'; ctx.fillRect(rl - 8, y, 8, 30); ctx.fillRect(rr, y, 8, 30); ctx.fillStyle = '#fff'; ctx.fillRect(rl - 8, y + 30, 8, 30); ctx.fillRect(rr, y + 30, 8, 30); }
-    ctx.fillStyle = 'rgba(255,255,255,.7)';
-    for (let y = (dist % 90) - 90; y < g.H; y += 90) { ctx.fillRect(rl + lane - 3, y, 6, 44); ctx.fillRect(rl + lane * 2 - 3, y, 6, 44); }
+    if (dist >= nextDeco) {
+      const left = Math.random() < 0.5, img = pick(deco), h = rl * (img === deco[0] ? 1.9 : 1.1);
+      side.push({ img, h, x: left ? rl * 0.42 : g.W - rl * 0.42, y: -h });
+      nextDeco = dist + 70 + Math.random() * 150;
+    }
+    for (let y = (dist % TILE) - TILE; y < g.H; y += TILE) ctx.drawImage(road, 0, y, g.W, TILE);
+    // the start line slides away under the wheels
+    if (dist < g.H) for (let i = 0; i < 12; i++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (i + j) % 2 ? '#fff' : '#26233a'; ctx.fillRect(rl + (rr - rl) / 12 * i, py - kh * 0.9 + dist + j * 12, (rr - rl) / 12 + 1, 12); }
+    for (const d of side) { d.y += speed * dt; shadow(d.x, d.y + d.h * 0.46, d.h * 0.3, d.h * 0.09); g.img(d.img, d.x, d.y, d.h); }
+    side = side.filter(d => d.y < g.H + d.h);
+    if (dt && (puffT -= dt) <= 0) { puffT = 0.07; puffs.push({ x: cx + (Math.random() - 0.5) * kw * 0.7, y: py + kh * 0.42, r: 4 + Math.random() * 5, life: 0.45 }); }
+    for (const p of puffs) { p.life -= dt; p.y += speed * 0.7 * dt; p.r += 22 * dt; ctx.globalAlpha = Math.max(0, p.life) * 1.1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1; puffs = puffs.filter(p => p.life > 0);
     for (const it of items) {
       it.y += speed * it.v * dt;
-      const ix = it.kind === 'cat' && !easy ? it.x + Math.sin(g.t * 1.6 + it.ph) * lane * 0.16 : it.x;
+      const ix = it.kind === 'cat' && !easy ? it.x + Math.sin(g.t * 1.6 + it.ph) * lane * 0.14 : it.x;
       const hitX = Math.abs(ix - cx), hitY = Math.abs(it.y - py);
       if (it.kind === 'cat') {
         if (it.spin) { it.spin += dt * 9; it.x += it.dir * 260 * dt; }
-        kart(ix, it.y, RIVALS[it.i][0], tintHead(it.i), it.spin || 0);
+        kart(rivals[it.i], ix, it.y, it.spin || Math.sin(g.t * 1.6 + it.ph + 1.5) * 0.06);
         if (!it.done && !it.spin && it.y > py + kh * 0.75) { it.done = true; g.add(1); g.pop(cx, py - kh * 0.8, '+1'); sfx('tap'); }
-      } else if (it.kind === 'cone') {
-        ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(it.x, it.y + kh * 0.16, kh * 0.2, kh * 0.08, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = '#ff7a2f'; ctx.beginPath(); ctx.moveTo(it.x, it.y - kh * 0.24); ctx.lineTo(it.x + kh * 0.16, it.y + kh * 0.16); ctx.lineTo(it.x - kh * 0.16, it.y + kh * 0.16); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.fillRect(it.x - kh * 0.085, it.y - kh * 0.04, kh * 0.17, kh * 0.07);
-      } else if (!it.done) g.img(fishImg, it.x, it.y, kh * 0.34);
+      } else if (it.kind === 'cone') { shadow(it.x, it.y + kh * 0.2, kh * 0.24, kh * 0.08); g.img(cone, it.x, it.y, kh * 0.5); }
+      else if (!it.done) g.img(fishImg, it.x, it.y, kh * 0.4 * (1 + Math.sin(g.t * 6 + it.ph) * 0.06));
       if (it.done || it.spin) continue;
       if (it.kind === 'fish') { if (hitX < kw * 0.7 && hitY < kh * 0.6) { it.done = true; g.add(2); g.pop(it.x, it.y, '+2'); sfx('good'); buzz(15); } continue; }
-      const wide = it.kind === 'cat' ? kw * 0.78 : kw * 0.5 + kh * 0.12, tall = it.kind === 'cat' ? kh * 0.86 : kh * 0.6;
+      const wide = it.kind === 'cat' ? kw * 0.82 : kw * 0.5 + kh * 0.14, tall = it.kind === 'cat' ? kh * 0.8 : kh * 0.55;
       if (!safe && hitX < wide && hitY < tall) {
         it.done = true; if (it.kind === 'cat') { it.spin = 0.01; it.dir = ix < cx ? -1 : 1; }
         lives--; safe = 1.2; hearts(); sfx('bad'); buzz([70, 50, 70]); g.pop(cx, py - kh * 0.8, '💥'); speed *= 0.7;
         if (lives <= 0) g.end(() => { lives = 1; hearts(); items = []; safe = 1.5; });
       }
     }
-    items = items.filter(it => it.y < g.H + kh && !(it.kind !== 'cat' && it.done && it.kind === 'fish'));
-    if (!safe || Math.floor(g.t * 12) % 2) kart(cx, py, '#ff5d6c', headImg, Math.max(-0.3, Math.min(0.3, (tx - cx) / lane * 0.5)));
+    items = items.filter(it => it.y < g.H + kh && !(it.done && it.kind !== 'cat'));
+    if (!safe || Math.floor(g.t * 12) % 2) kart(me, cx, py, Math.max(-0.28, Math.min(0.28, (tx - cx) / lane * 0.5)));
     g.drawPops(dt);
   });
   sfx('meow');
