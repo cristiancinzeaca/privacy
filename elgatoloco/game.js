@@ -14,6 +14,7 @@ const LANGS = ['ro', 'es', 'en'];
 const KEY = 'elgatoloco-v1';
 const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true, stat: { plays: 0, smart: 0, daily: 0 }, daily: null };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+if (!S.school || !Array.isArray(S.school.m)) S.school = { m: [] };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
   const n = (navigator.language || 'ro').slice(0, 2);
@@ -110,6 +111,18 @@ const STR = {
   q_toes: ['Cum se spune în spaniolă?', '¿Cómo se dice en español?', 'How do you say it in Spanish?'],
   q_count: ['Câte sunt?', '¿Cuántos hay?', 'How many are there?'],
   q_solve: ['Cât face?', '¿Cuánto es?', 'What is the answer?'],
+  school: ['Școala pisicului', 'La escuela del gato', 'Cat school'], schoolSub: ['Calcule pas cu pas, cu numărătoarea', 'Cálculo paso a paso, con el ábaco', 'Sums step by step, with the abacus'],
+  schoolNote: ['Fiecare lecție are trei pași: descoperi cu bilele, înțelegi, apoi exersezi. Lecția următoare se deschide când o termini pe aceasta.', 'Cada lección tiene tres pasos: descubres con las bolas, entiendes y luego practicas. La siguiente lección se abre al terminar esta.', 'Each lesson has three steps: discover with the beads, understand, then practise. The next lesson opens when you finish this one.'],
+  ph_0: ['Descoperă', 'Descubre', 'Discover'], ph_1: ['Înțelege', 'Entiende', 'Understand'], ph_2: ['Exersează', 'Practica', 'Practise'],
+  sc_i_show: ['Arată numărul {0} cu bilele', 'Muestra el número {0} con las bolas', 'Show the number {0} with the beads'],
+  sc_i_add: ['Mai adaugă {0} bile', 'Añade {0} bolas más', 'Add {0} more beads'], sc_i_sub: ['Ia {0} bile', 'Quita {0} bolas', 'Take away {0} beads'],
+  sc_i_bond: ['Umple rândul până la 10', 'Llena la fila hasta 10', 'Fill the row up to 10'],
+  sc_i_mul: ['Fă {0} rânduri de câte {1} bile', 'Haz {0} filas de {1} bolas', 'Make {0} rows of {1} beads'],
+  sc_i_div: ['Împarte {0} bile în {1} rânduri egale', 'Reparte {0} bolas en {1} filas iguales', 'Share {0} beads into {1} equal rows'],
+  sc_ready: ['Gata', 'Listo', 'Done'], sc_hint: ['Trebuie să fie {0} bile', 'Tiene que haber {0} bolas', 'There should be {0} beads'],
+  sc_hintRows: ['{0} rânduri de câte {1}', '{0} filas de {1}', '{0} rows of {1}'],
+  sc_retry: ['Aproape! Ne mai uităm la bile și exersăm încă o dată.', '¡Casi! Miramos otra vez las bolas y practicamos de nuevo.', 'Almost! Let us look at the beads again and practise once more.'],
+  sc_pass: ['Lecție terminată!', '¡Lección terminada!', 'Lesson complete!'],
   q_missNum: ['Ce număr lipsește?', '¿Qué número falta?', 'Which number is missing?'],
   q_biggest: ['Care număr este cel mai mare?', '¿Cuál es el número más grande?', 'Which number is the biggest?'],
   q_next: ['Ce urmează?', '¿Qué sigue?', 'What comes next?'],
@@ -690,10 +703,10 @@ const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map
 function show(v) {
   cur = null; view = v; resetArmed = false;
   hush();
-  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart })[v]();
+  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart, school: vSchool })[v]();
 }
 // the Android back button: leave a game or page for the map; false lets the app close
-window.__back = () => { if (view === 'map' || view === 'title') return false; show('map'); return true; };
+window.__back = () => { if (view === 'map' || view === 'title') return false; show(view === 'lesson' ? 'school' : 'map'); return true; };
 function vTitle() {
   app.innerHTML = `<div class="title">
     <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button>
@@ -724,7 +737,7 @@ function vMap() {
   const games = `<section class="games"><div class="g-headline"><h3>${T('games')}</h3><button class="pill alt" data-act="go" data-v="quests" aria-label="${T('quests')}">🏆 ${trophies()} / ${QUESTS.length * 3}</button></div>
       <button class="daily${dl.done ? ' done' : ''}" data-act="go" data-v="${dl.id}"><span class="d-ic">${pic(dl.ic)}</span><span class="pc-tx"><b>${T('daily')}</b><small>${T('g_' + dl.id)}: ${dl.unit} ${dl.need}</small></span><span class="pc-go">${dl.done ? '✅' : '▶'}</span></button>
       <div class="g-grid">${GAMES.map(([id, ic]) => `<button class="g-tile" data-act="go" data-v="${id}"><span class="g-ic">${pic(ic)}</span><b>${T('g_' + id)}</b><small>🏆 ${S.best[id] || 0}</small></button>`).join('')}</div>
-      <button class="btn alt" data-act="go" data-v="quests">🏅 ${T('quests')}</button></section><h3 class="g-sect">${T('adventure')}</h3>`;
+      <button class="btn alt" data-act="go" data-v="quests">🏅 ${T('quests')}</button></section><button class="daily school" data-act="go" data-v="school"><span class="d-ic">🧮</span><span class="pc-tx"><b>${T('school')}</b><small>${T('schoolSub')}</small></span><span class="pc-go">${schoolDone()} / ${LESSONS.length}</span></button><h3 class="g-sect">${T('adventure')}</h3>`;
   app.innerHTML = `<div class="map">
     <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
       <button class="icon-btn" data-act="go" data-v="album" aria-label="${T('album')}">📒</button>
@@ -1861,6 +1874,175 @@ function vKart() {
   sfx('meow');
 }
 
+/* ---------- school: sums step by step ----------
+   One fixed path of lessons. Each lesson has three stages: discover (move the beads yourself),
+   understand (see the beads, pick the number) and practise (numbers only, with earlier lessons mixed in).
+   The next lesson opens only after the practice stage is passed. */
+const ri = (a, b) => a + rnd(b - a + 1);
+const sAdd = (a, b, rows) => ({ kind: 'add', txt: `${a} + ${b}`, ans: a + b, start: a, target: a + b, a, b, rows });
+const sSub = (a, b, rows) => ({ kind: 'sub', txt: `${a} − ${b}`, ans: a - b, start: a, target: a - b, a, b, rows });
+const sShow = (n, rows) => ({ kind: 'show', txt: String(n), ans: n, start: 0, target: n, a: n, b: 0, rows });
+const sMul = (a, b) => ({ kind: 'mul', txt: `${a} × ${b}`, ans: a * b, start: 0, target: a * b, a, b, rows: Math.min(10, a + 1) });
+const sDiv = (q, b) => ({ kind: 'div', txt: `${q * b} ÷ ${b}`, ans: q, start: 0, target: q * b, a: q * b, b, rows: Math.min(10, b + 1) });
+const LESSONS = [
+  { n: ['Numere până la 5', 'Números hasta 5', 'Numbers to 5'], g: () => sShow(ri(1, 5), 1) },
+  { n: ['Numere până la 10', 'Números hasta 10', 'Numbers to 10'], g: () => sShow(ri(4, 10), 1) },
+  { n: ['Adunări până la 5', 'Sumas hasta 5', 'Adding up to 5'], g: () => { const s = ri(2, 5), a = ri(1, s - 1); return sAdd(a, s - a, 1); } },
+  { n: ['Adunări până la 10', 'Sumas hasta 10', 'Adding up to 10'], g: () => { const s = ri(6, 10), a = ri(1, s - 1); return sAdd(a, s - a, 1); } },
+  { n: ['Prietenii lui 10', 'Los amigos del 10', 'Friends of 10'], g: () => { const a = ri(1, 9); return { kind: 'bond', txt: `${a} + ? = 10`, ans: 10 - a, start: a, target: 10, a, b: 10 - a, rows: 1 }; } },
+  { n: ['Scăderi până la 10', 'Restas hasta 10', 'Taking away up to 10'], g: () => { const a = ri(2, 10); return sSub(a, ri(1, a), 1); } },
+  { n: ['Numere până la 20', 'Números hasta 20', 'Numbers to 20'], g: () => sShow(ri(11, 20), 2) },
+  { n: ['Adunări până la 20', 'Sumas hasta 20', 'Adding up to 20'], g: () => { const a = ri(10, 18); return sAdd(a, ri(1, 9 - a % 10), 2); } },
+  { n: ['Adunări cu trecere peste 10', 'Sumas que pasan de 10', 'Adding across 10'], g: () => { const a = ri(2, 9); return sAdd(a, ri(11 - a, 9), 2); } },
+  { n: ['Scăderi până la 20', 'Restas hasta 20', 'Taking away up to 20'], g: () => { const a = ri(11, 19); return sSub(a, ri(1, a % 10), 2); } },
+  { n: ['Scăderi cu trecere peste 10', 'Restas que pasan de 10', 'Taking away across 10'], g: () => { const a = ri(11, 18); return sSub(a, ri(a % 10 + 1, 9), 2); } },
+  { n: ['Zeci întregi', 'Decenas enteras', 'Whole tens'], g: () => { const a = ri(1, 8), b = ri(1, 9 - a); return rnd(2) ? sAdd(a * 10, b * 10, 10) : sSub((a + b) * 10, b * 10, 10); } },
+  { n: ['Adunări până la 100', 'Sumas hasta 100', 'Adding up to 100'], g: () => { const ta = ri(1, 7), tb = ri(1, 8 - ta), ua = ri(0, 8), ub = ri(1, 9 - ua); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); } },
+  { n: ['Adunări până la 100 cu trecere', 'Sumas hasta 100 llevando', 'Adding to 100 with carrying'], g: () => { const ua = ri(2, 9), ub = ri(11 - ua, 9), ta = ri(1, 6), tb = ri(1, 7 - ta); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); } },
+  { n: ['Scăderi până la 100', 'Restas hasta 100', 'Taking away up to 100'], g: () => { const ta = ri(2, 9), tb = ri(1, ta - 1), ua = ri(1, 9), ub = ri(0, ua); return sSub(ta * 10 + ua, tb * 10 + ub, 10); } },
+  { n: ['Scăderi până la 100 cu împrumut', 'Restas hasta 100 llevando', 'Taking away with borrowing'], g: () => { const ua = ri(0, 8), ub = ri(ua + 1, 9), ta = ri(2, 9), tb = ri(1, ta - 1); return sSub(ta * 10 + ua, tb * 10 + ub, 10); } },
+  { n: ['Dublul și jumătatea', 'El doble y la mitad', 'Double and half'], g: () => { const n = ri(2, 10); return rnd(2) ? sAdd(n, n, 2) : sDiv(n, 2); } },
+  { n: ['Înmulțiri cu 2, 5 și 10', 'Multiplicar por 2, 5 y 10', 'Times 2, 5 and 10'], g: () => sMul(ri(1, 9), pick([2, 5, 10])) },
+  { n: ['Înmulțiri cu 3 și 4', 'Multiplicar por 3 y 4', 'Times 3 and 4'], g: () => sMul(ri(2, 9), pick([3, 4])) },
+  { n: ['Înmulțiri cu 6, 7, 8 și 9', 'Multiplicar por 6, 7, 8 y 9', 'Times 6, 7, 8 and 9'], g: () => sMul(ri(2, 9), ri(6, 9)) },
+  { n: ['Împărțiri la 2, 3, 4 și 5', 'Dividir entre 2, 3, 4 y 5', 'Dividing by 2, 3, 4 and 5'], g: () => sDiv(ri(2, 10), ri(2, 5)) },
+  { n: ['Împărțiri la 6, 7, 8 și 9', 'Dividir entre 6, 7, 8 y 9', 'Dividing by 6, 7, 8 and 9'], g: () => sDiv(ri(2, 10), ri(6, 9)) },
+];
+const PH_N = [3, 4, 8], PH_IC = ['🔍', '💡', '⚡'], PASS = 7;
+const schoolBase = () => [0, 6, 11][S.age];
+const schoolDone = () => S.school.m.filter(Boolean).length;
+
+function vSchool() {
+  const st = S.school.m, base = schoolBase();
+  let last = -1; st.forEach((v, i) => { if (v) last = i; });
+  const nextI = Math.max(base, last + 1);
+  const rows = LESSONS.map((L, i) => {
+    const open = i <= base || st[i - 1] || st[i];
+    return open ? `<button class="lesson${i === nextI ? ' next' : ''}" data-act="lesson" data-i="${i}"><b>${i + 1}</b><span>${L.n[li()]}</span>${starsStr(st[i] || 0)}</button>`
+      : `<button class="lesson" disabled><b>🔒</b><span>${L.n[li()]}</span></button>`;
+  }).join('');
+  app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('school')}</h2><span class="pill">${schoolDone()} / ${LESSONS.length}</span></header>
+    <div class="body"><p class="note">${T('schoolNote')}</p><div class="lessons">${rows}</div></div></div>`;
+  const nx = app.querySelector('.lesson.next'); if (nx) nx.scrollIntoView({ block: 'center' });
+}
+
+// the cells of a still abacus picture: a = first number, b = second number, x = taken away, . = empty
+function beadCells(it) {
+  if (it.kind === 'mul' || it.kind === 'div') {
+    const rows = it.kind === 'mul' ? it.a : it.b, per = it.kind === 'mul' ? it.b : it.ans;
+    return Array.from({ length: rows }, (_, r) => (r % 2 ? 'b' : 'a').repeat(per).padEnd(10, '.'));
+  }
+  const s = (it.kind === 'sub' ? 'a'.repeat(it.a - it.b) + 'x'.repeat(it.b) : 'a'.repeat(it.a) + 'b'.repeat(it.b)).padEnd(Math.max(1, Math.ceil((it.a + (it.kind === 'sub' ? 0 : it.b)) / 10)) * 10, '.');
+  return s.match(/.{10}/g);
+}
+const beadPic = it => { const rows = beadCells(it); return `<div class="abacus r${rows.length > 2 ? 10 : rows.length}">${rows.map(r => `<div class="rod">${[...r].map(c => `<i class="bead ${c === '.' ? 'off' : c}"></i>`).join('')}</div>`).join('')}</div>`; };
+function paintBeads() {
+  const it = cur.it, box = $('.abacus'); if (!box) return;
+  const grp = it.kind === 'mul' || it.kind === 'div';
+  box.innerHTML = cur.c.map((n, r) => `<div class="rod">${Array.from({ length: 10 }, (_, i) => `<button class="bead ${i < n ? (grp ? (r % 2 ? 'b' : 'a') : r * 10 + i < it.start ? 'a' : 'b') : 'off'}" data-act="bead" data-r="${r}" data-i="${i}" aria-label="${i + 1}"></button>`).join('')}</div>`).join('');
+  $('#tot').textContent = cur.c.reduce((a, b) => a + b, 0);
+}
+function sOpts(c) {
+  const o = shuffle([c, ...sample([c - 1, c + 1, c - 2, c + 2, c + 10, c - 10].filter(v => v >= 0), 3)]);
+  return { opts: o.map(String), ans: o.indexOf(c) };
+}
+
+function startLesson(i) {
+  hush();
+  cur = { school: true, i, L: LESSONS[i], ph: 0, n: 0, ok: 0, tries: 0, left: PH_N[0], seen: new Set(), it: null, wrong: 0, lock: false };
+  view = 'lesson';
+  lessonStep();
+}
+function lessonStep() {
+  let L = cur.L;
+  // practice mixes in two questions from earlier lessons so that old skills stay fresh
+  if (cur.ph === 2 && cur.i > 0 && (cur.n === 2 || cur.n === 5)) L = LESSONS[rnd(cur.i)];
+  let it; for (let k = 0; k < 40; k++) { it = L.g(); if (!cur.seen.has(it.txt)) break; }
+  cur.seen.add(it.txt); cur.it = it; cur.wrong = 0; cur.lock = false;
+  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
+  const head = `<header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2></header>
+    <div class="phases">${[0, 1, 2].map(p => `<span class="ph${p === cur.ph ? ' on' : p < cur.ph ? ' was' : ''}">${PH_IC[p]} ${T('ph_' + p)}</span>`).join('')}</div>
+    <div class="dots">${Array.from({ length: total }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>`;
+  let body, q;
+  if (cur.ph === 0) {
+    q = T('sc_i_' + it.kind, it.kind === 'div' ? it.a : it.kind === 'mul' ? it.a : it.kind === 'show' ? it.a : it.b, it.b);
+    cur.c = Array.from({ length: it.rows }, (_, r) => Math.max(0, Math.min(10, it.start - r * 10)));
+    body = `<div class="stim s-top">${it.kind === 'show' ? '' : `<span class="expr">${it.txt}</span>`}<span class="count">🧮 <b id="tot">0</b></span></div>
+      <div class="abacus live r${it.rows > 2 ? 10 : it.rows}"></div><p class="hintline" id="shint"></p>
+      <button class="btn" data-act="scheck">✔ ${T('sc_ready')}</button>`;
+  } else {
+    q = it.kind === 'show' ? T('q_count') : it.kind === 'bond' ? T('q_missNum') : T('q_solve');
+    it.o = sOpts(it.ans);
+    const picOn = cur.ph === 1 || it.kind === 'show';
+    body = `<div class="stim s-top">${it.kind === 'show' ? '' : `<span class="expr">${it.txt}</span>`}</div>
+      <div class="help"${picOn ? '' : ' hidden'}>${beadPic(it)}</div>
+      <div class="opts">${it.o.opts.map((o, k) => `<button class="opt num" data-act="sopt" data-i="${k}">${o}</button>`).join('')}</div>`;
+  }
+  app.innerHTML = `<div class="page lesson-pg">${head}<div class="panel show" id="panel"><p class="q" data-act="say" data-lang="${S.lang}" data-text="${q.replace(/"/g, '')}">${q}</p>${body}</div></div>`;
+  if (cur.ph === 0) paintBeads();
+  if (cur.n === 0 || cur.ph === 0) say(q, S.lang);
+}
+function lessonNext() {
+  cur.n++;
+  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
+  if (cur.n < total) return lessonStep();
+  if (cur.ph < 2) { cur.ph++; cur.n = 0; cur.ok = 0; cur.left = PH_N[1]; cur.seen = new Set(); sfx('clap'); return lessonStep(); }
+  if (cur.ok >= PASS) return lessonDone();
+  // not there yet: look at the beads twice more, then practise again
+  const tok = cur; cur.tries++;
+  app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button><h2>${cur.ok} / ${PH_N[2]}</h2><p class="label">${T('sc_retry')}</p>
+    <div class="row"><button class="btn" data-act="sretry">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="school">${T('school')}</button></div></div>`;
+  cur = tok;
+}
+function lessonDone() {
+  const i = cur.i, stars = cur.tries === 0 ? 3 : cur.tries === 1 ? 2 : 1;
+  S.school.m[i] = Math.max(S.school.m[i] || 0, stars);
+  for (let k = 0; k < S.school.m.length; k++) S.school.m[k] = S.school.m[k] || 0;
+  save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
+  cur = null; view = 'done';
+  app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('cheer')}</button><h2>${T('sc_pass')}</h2>
+    <div class="stars3">${[1, 2, 3].map(k => `<span class="${k <= stars ? 'on' : ''}">★</span>`).join('')}</div><p class="label">${LESSONS[i].n[li()]}</p>
+    <div class="row">${i + 1 < LESSONS.length ? `<button class="btn" data-act="lesson" data-i="${i + 1}">${T('next')} ▶</button>` : ''}
+      <button class="btn alt" data-act="go" data-v="school">${T('school')}</button><button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button></div></div>`;
+}
+const SCHOOL_ACT = {
+  lesson(d) { sfx('tap'); startLesson(+d.i); },
+  sretry() { if (!cur || !cur.school) return; sfx('tap'); cur.ph = 1; cur.n = 0; cur.ok = 0; cur.left = 2; cur.seen = new Set(); lessonStep(); },
+  bead(d) {
+    if (!cur || !cur.school || cur.lock || cur.ph !== 0) return;
+    const r = +d.r, i = +d.i;
+    cur.c[r] = i < cur.c[r] ? i : i + 1;
+    sfx('tap'); paintBeads();
+  },
+  scheck() {
+    if (!cur || !cur.school || cur.lock || cur.ph !== 0) return;
+    const it = cur.it, rows = cur.c.filter(n => n > 0), sum = cur.c.reduce((a, b) => a + b, 0), even = rows.every(n => n === rows[0]);
+    const ok = it.kind === 'mul' ? sum === it.target && even && (rows.length === it.a || rows.length === it.b)
+      : it.kind === 'div' ? even && rows.length === it.b && rows[0] === it.ans : sum === it.target;
+    if (ok) {
+      cur.lock = true; sfx('good'); buzz(25);
+      const ex = $('.s-top'); ex.innerHTML = `<span class="expr good">${it.kind === 'show' ? it.txt : it.kind === 'bond' ? `${it.a} + ${it.b} = 10` : `${it.txt} = ${it.ans}`}</span>`;
+      later(1300, lessonNext);
+    } else {
+      sfx('bad'); buzz([70, 50, 70]);
+      const box = $('.abacus'); box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+      if (++cur.wrong >= 2) $('#shint').textContent = T(it.kind === 'mul' || it.kind === 'div' ? 'sc_hintRows' : 'sc_hint', it.kind === 'div' ? it.b : it.kind === 'mul' ? it.a : it.target, it.kind === 'div' ? it.ans : it.b);
+    }
+  },
+  sopt(d, b) {
+    const it = cur && cur.school && cur.it; if (!it || cur.lock || b.classList.contains('no')) return;
+    if (+d.i === it.o.ans) {
+      b.classList.add('ok'); cur.lock = true; sfx('good'); buzz(25);
+      if (!cur.wrong && cur.ph === 2) cur.ok++;
+      later(cur.wrong ? 1400 : 650, lessonNext);
+    } else {
+      b.classList.add('no'); sfx('bad'); buzz([70, 50, 70]); cur.wrong++;
+      const h = $('.help'); if (h) h.hidden = false; // a slip in practice brings the beads back
+      if (cur.wrong >= 2) $('.opts').children[it.o.ans].classList.add('hint');
+    }
+  },
+};
+
 /* ---------- input ---------- */
 const ACT = {
   set(d) {
@@ -1886,7 +2068,7 @@ const ACT = {
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
-    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.setup = false; save(); show('title');
+    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.school = { m: [] }; S.setup = false; save(); show('title');
   },
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {
@@ -1950,11 +2132,12 @@ const ACT = {
     else { mistake(); c.playing = true; later(900, playSeq); }
   },
 };
+Object.assign(ACT, SCHOOL_ACT);
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if (b && !b.disabled) ACT[b.dataset.act](b.dataset, b);
 });
 
-window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk() };
+window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk(), LESSONS };
 show(S.setup ? 'map' : 'title');
 })();
