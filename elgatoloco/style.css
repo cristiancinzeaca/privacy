@@ -588,3 +588,11 @@ body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repe
 .done h2 { animation: logoin .7s cubic-bezier(.2, 1.5, .4, 1) both; }
 @media (prefers-reduced-motion: reduce) { .done::before, .done .stars3 span, .done h2, .sky i, .sky b { animation: none; } }
 .stim .emo { height: 1.4em; width: 1.4em; vertical-align: -0.32em; }
+
+
+/* ---------- school: chapters, short texts ---------- */
+.l-ch { margin: 14px 4px 0; font-size: 1.15rem; color: var(--grape-deep); }
+.l-ch:first-child { margin-top: 2px; }
+.lesson-pg .sent.text { font-size: 1.22rem; line-height: 1.32; text-wrap: pretty; }
+.lesson-pg .claim { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; line-height: 1.2; color: var(--grape-deep); background: #f1edff; border: 2px dashed var(--grape); border-radius: 16px; padding: 8px 14px; }
+.opt.ltr.low { text-transform: none; }

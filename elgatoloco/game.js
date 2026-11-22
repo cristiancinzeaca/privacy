@@ -114,11 +114,11 @@ const STR = {
   q_count: ['Câte sunt?', '¿Cuántos hay?', 'How many are there?'],
   q_solve: ['Cât face?', '¿Cuánto es?', 'What is the answer?'],
   school: ['Școala pisicului', 'La escuela del gato', 'Cat school'], schoolSub: ['Calcule și citit, pas cu pas', 'Cálculo y lectura, paso a paso', 'Sums and reading, step by step'],
-  schoolNote: ['Fiecare lecție are trei pași: descoperi, înțelegi, apoi exersezi. Între pași te joci puțin cu pisicul.', 'Cada lección tiene tres pasos: descubres, entiendes y luego practicas. Entre paso y paso juegas un poco con el gato.', 'Each lesson has three steps: discover, understand, then practise. Between steps you play a little with the cat.'],
+  schoolNote: ['Lecțiile merg pe rând, ca la școală: fiecare adaugă un singur lucru nou. Descoperi, înțelegi, apoi exersezi, iar între pași te joci puțin cu pisicul.', 'Las lecciones van en orden, como en el cole: cada una añade una sola cosa nueva. Descubres, entiendes y luego practicas, y entre paso y paso juegas un poco con el gato.', 'The lessons go in order, like at school: each one adds a single new thing. You discover, understand, then practise, and between steps you play a little with the cat.'],
   ph_0: ['Descoperă', 'Descubre', 'Discover'], ph_1: ['Înțelege', 'Entiende', 'Understand'], ph_2: ['Exersează', 'Practica', 'Practise'],
   sc_i_show: ['Arată numărul {0} cu bilele', 'Muestra el número {0} con las bolas', 'Show the number {0} with the beads'],
   sc_i_add: ['Mai adaugă {0} bile', 'Añade {0} bolas más', 'Add {0} more beads'], sc_i_sub: ['Ia {0} bile', 'Quita {0} bolas', 'Take away {0} beads'],
-  sc_i_bond: ['Umple rândul până la 10', 'Llena la fila hasta 10', 'Fill the row up to 10'],
+  sc_i_bond: ['Adaugă bile până ai {0}', 'Añade bolas hasta tener {0}', 'Add beads until you have {0}'],
   sc_i_mul: ['Fă {0} rânduri de câte {1} bile', 'Haz {0} filas de {1} bolas', 'Make {0} rows of {1} beads'],
   sc_i_div: ['Împarte {0} bile în {1} rânduri egale', 'Reparte {0} bolas en {1} filas iguales', 'Share {0} beads into {1} equal rows'],
   sc_ready: ['Gata', 'Listo', 'Done'], sc_hint: ['Trebuie să fie {0} bile', 'Tiene que haber {0} bolas', 'There should be {0} beads'],
@@ -135,6 +135,9 @@ const STR = {
   rd_readPick: ['Citește și alege imaginea', 'Lee y elige la imagen', 'Read and pick the picture'], rd_match: ['Se potrivesc?', '¿Coinciden?', 'Do they match?'],
   rd_order: ['Pune cuvintele în ordine', 'Ordena las palabras', 'Put the words in order'],
   q_missNum: ['Ce număr lipsește?', '¿Qué número falta?', 'Which number is missing?'],
+  sc_bigger: ['Care număr este mai mare?', '¿Qué número es mayor?', 'Which number is bigger?'], sc_smaller: ['Care număr este mai mic?', '¿Qué número es menor?', 'Which number is smaller?'],
+  rd_small: ['Găsește aceeași literă, mică', 'Busca la misma letra en minúscula', 'Find the same letter, small'], rd_startsPic: ['Ce începe cu litera {0}?', '¿Qué empieza por la letra {0}?', 'Which one starts with {0}?'],
+  rd_true: ['Citește. Este adevărat?', 'Lee. ¿Es verdad?', 'Read. Is it true?'],
   q_biggest: ['Care număr este cel mai mare?', '¿Cuál es el número más grande?', 'Which number is the biggest?'],
   q_next: ['Ce urmează?', '¿Qué sigue?', 'What comes next?'],
   q_odd: ['Care nu se potrivește?', '¿Cuál no encaja?', 'Which one does not belong?'],
@@ -2064,31 +2067,112 @@ const sSub = (a, b, rows) => ({ kind: 'sub', txt: `${a} − ${b}`, ans: a - b, s
 const sShow = (n, rows) => ({ kind: 'show', txt: String(n), ans: n, start: 0, target: n, a: n, b: 0, rows });
 const sMul = (a, b) => ({ kind: 'mul', txt: `${a} × ${b}`, ans: a * b, start: 0, target: a * b, a, b, rows: Math.min(10, a + 1) });
 const sDiv = (q, b) => ({ kind: 'div', txt: `${q * b} ÷ ${b}`, ans: q, start: 0, target: q * b, a: q * b, b, rows: Math.min(10, b + 1) });
+const near = (c, lo, hi) => { const o = shuffle([c, ...sample([c - 1, c + 1, c - 2, c + 2, c - 3, c + 3].filter(v => v >= lo && v <= hi), 3)]); return { opts: o.map(String), ans: o.indexOf(c) }; };
+const mBond = (a, s) => ({ kind: 'bond', txt: `${a} + ? = ${s}`, ans: s - a, start: a, target: s, a, b: s - a, rows: s > 10 ? 2 : 1 });
+// four numbers in a row with one of them hidden: the next one, the one before, or one in the middle
+function mSeq(lo, hi) {
+  const a = ri(lo, hi - 3), s = [a, a + 1, a + 2, a + 3], at = pick([3, 3, 0, 1, 2]), c = s[at];
+  s[at] = '?';
+  return { mode: 'choice', kind: 'seq', txt: 'q' + at + '.' + a, q: T('q_missNum'), stim: expr(s.join(', ')), o: near(c, Math.max(0, lo - 1), hi + 1), cls: 'num', sy: [] };
+}
+// two numbers: which is bigger, which is smaller; small numbers come with a row of beads each until practice
+function mCmp(lo, hi, ph) {
+  const a = ri(lo, hi); let b; do { b = ri(lo, hi); } while (b === a);
+  const big = rnd(2), rod = (n, c) => `<div class="rod">${[...c.repeat(n).padEnd(10, '.')].map(x => `<i class="bead ${x === '.' ? 'off' : x}"></i>`).join('')}</div>`;
+  return { mode: 'choice', kind: 'cmp', txt: 'c' + big + '.' + a + '.' + b, q: T(big ? 'sc_bigger' : 'sc_smaller'), stim: '',
+    help: hi <= 10 && ph < 2 ? `<div class="abacus r2">${rod(a, 'a')}${rod(b, 'b')}</div>` : '', helpOn: true,
+    o: { opts: [String(a), String(b)], ans: (a > b) === !!big ? 0 : 1 }, cls: 'num', sy: [] };
+}
+const any = (...fs) => () => pick(fs)();
+const gAdd5 = () => { const s = ri(2, 5), a = ri(1, s - 1); return sAdd(a, s - a, 1); };
+const gAdd10 = () => { const s = ri(6, 10), a = ri(1, s - 1); return sAdd(a, s - a, 1); };
+const gSub5 = () => { const a = ri(2, 5); return sSub(a, ri(1, a), 1); };
+const gSub10 = () => { const a = ri(6, 10); return sSub(a, ri(1, a), 1); };
+const gAdd20 = () => { const a = ri(11, 18); return sAdd(a, ri(1, 9 - a % 10), 2); };
+const gSub20 = () => { const a = ri(12, 19); return sSub(a, ri(1, a % 10), 2); };
+const gAddX = () => { const a = ri(2, 9); return sAdd(a, ri(11 - a, 9), 2); };
+const gSubX = () => { const a = ri(11, 18); return sSub(a, ri(a % 10 + 1, 9), 2); };
+const gTens = () => { const a = ri(1, 8), b = ri(1, 9 - a); return rnd(2) ? sAdd(a * 10, b * 10, 10) : sSub((a + b) * 10, b * 10, 10); };
+const gAdd100 = () => { const ta = ri(1, 7), tb = ri(1, 8 - ta), ua = ri(0, 8), ub = ri(1, 9 - ua); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); };
+const gAdd100c = () => { const ua = ri(2, 9), ub = ri(11 - ua, 9), ta = ri(1, 6), tb = ri(1, 7 - ta); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); };
+const gSub100 = () => { const ta = ri(2, 9), tb = ri(1, ta - 1), ua = ri(1, 9), ub = ri(0, ua); return sSub(ta * 10 + ua, tb * 10 + ub, 10); };
+const gSub100b = () => { const ua = ri(0, 8), ub = ri(ua + 1, 9), ta = ri(2, 9), tb = ri(1, ta - 1); return sSub(ta * 10 + ua, tb * 10 + ub, 10); };
+const gMul = (...ts) => () => sMul(ri(1, 10), pick(ts));
+const gDiv = (...ts) => () => sDiv(ri(1, 10), pick(ts));
+// ch = the chapter that starts with this lesson
 const LESSONS = [
-  { n: ['Numere până la 5', 'Números hasta 5', 'Numbers to 5'], g: () => sShow(ri(1, 5), 1) },
-  { n: ['Numere până la 10', 'Números hasta 10', 'Numbers to 10'], g: () => sShow(ri(4, 10), 1) },
-  { n: ['Adunări până la 5', 'Sumas hasta 5', 'Adding up to 5'], g: () => { const s = ri(2, 5), a = ri(1, s - 1); return sAdd(a, s - a, 1); } },
-  { n: ['Adunări până la 10', 'Sumas hasta 10', 'Adding up to 10'], g: () => { const s = ri(6, 10), a = ri(1, s - 1); return sAdd(a, s - a, 1); } },
-  { n: ['Prietenii lui 10', 'Los amigos del 10', 'Friends of 10'], g: () => { const a = ri(1, 9); return { kind: 'bond', txt: `${a} + ? = 10`, ans: 10 - a, start: a, target: 10, a, b: 10 - a, rows: 1 }; } },
-  { n: ['Scăderi până la 10', 'Restas hasta 10', 'Taking away up to 10'], g: () => { const a = ri(2, 10); return sSub(a, ri(1, a), 1); } },
-  { n: ['Numere până la 20', 'Números hasta 20', 'Numbers to 20'], g: () => sShow(ri(11, 20), 2) },
-  { n: ['Adunări până la 20', 'Sumas hasta 20', 'Adding up to 20'], g: () => { const a = ri(10, 18); return sAdd(a, ri(1, 9 - a % 10), 2); } },
-  { n: ['Adunări cu trecere peste 10', 'Sumas que pasan de 10', 'Adding across 10'], g: () => { const a = ri(2, 9); return sAdd(a, ri(11 - a, 9), 2); } },
-  { n: ['Scăderi până la 20', 'Restas hasta 20', 'Taking away up to 20'], g: () => { const a = ri(11, 19); return sSub(a, ri(1, a % 10), 2); } },
-  { n: ['Scăderi cu trecere peste 10', 'Restas que pasan de 10', 'Taking away across 10'], g: () => { const a = ri(11, 18); return sSub(a, ri(a % 10 + 1, 9), 2); } },
-  { n: ['Zeci întregi', 'Decenas enteras', 'Whole tens'], g: () => { const a = ri(1, 8), b = ri(1, 9 - a); return rnd(2) ? sAdd(a * 10, b * 10, 10) : sSub((a + b) * 10, b * 10, 10); } },
-  { n: ['Adunări până la 100', 'Sumas hasta 100', 'Adding up to 100'], g: () => { const ta = ri(1, 7), tb = ri(1, 8 - ta), ua = ri(0, 8), ub = ri(1, 9 - ua); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); } },
-  { n: ['Adunări până la 100 cu trecere', 'Sumas hasta 100 llevando', 'Adding to 100 with carrying'], g: () => { const ua = ri(2, 9), ub = ri(11 - ua, 9), ta = ri(1, 6), tb = ri(1, 7 - ta); return sAdd(ta * 10 + ua, tb * 10 + ub, 10); } },
-  { n: ['Scăderi până la 100', 'Restas hasta 100', 'Taking away up to 100'], g: () => { const ta = ri(2, 9), tb = ri(1, ta - 1), ua = ri(1, 9), ub = ri(0, ua); return sSub(ta * 10 + ua, tb * 10 + ub, 10); } },
-  { n: ['Scăderi până la 100 cu împrumut', 'Restas hasta 100 llevando', 'Taking away with borrowing'], g: () => { const ua = ri(0, 8), ub = ri(ua + 1, 9), ta = ri(2, 9), tb = ri(1, ta - 1); return sSub(ta * 10 + ua, tb * 10 + ub, 10); } },
-  { n: ['Dublul și jumătatea', 'El doble y la mitad', 'Double and half'], g: () => { const n = ri(2, 10); return rnd(2) ? sAdd(n, n, 2) : sDiv(n, 2); } },
-  { n: ['Înmulțiri cu 2, 5 și 10', 'Multiplicar por 2, 5 y 10', 'Times 2, 5 and 10'], g: () => sMul(ri(1, 9), pick([2, 5, 10])) },
-  { n: ['Înmulțiri cu 3 și 4', 'Multiplicar por 3 y 4', 'Times 3 and 4'], g: () => sMul(ri(2, 9), pick([3, 4])) },
-  { n: ['Înmulțiri cu 6, 7, 8 și 9', 'Multiplicar por 6, 7, 8 y 9', 'Times 6, 7, 8 and 9'], g: () => sMul(ri(2, 9), ri(6, 9)) },
-  { n: ['Împărțiri la 2, 3, 4 și 5', 'Dividir entre 2, 3, 4 y 5', 'Dividing by 2, 3, 4 and 5'], g: () => sDiv(ri(2, 10), ri(2, 5)) },
-  { n: ['Împărțiri la 6, 7, 8 și 9', 'Dividir entre 6, 7, 8 y 9', 'Dividing by 6, 7, 8 and 9'], g: () => sDiv(ri(2, 10), ri(6, 9)) },
+  { ch: ['Numerele până la 10', 'Los números hasta 10', 'Numbers to 10'],
+    n: ['Numerele 1, 2 și 3', 'Los números 1, 2 y 3', 'The numbers 1, 2 and 3'], g: () => sShow(ri(1, 3), 1) },
+  { n: ['Numerele 4 și 5', 'Los números 4 y 5', 'The numbers 4 and 5'], g: () => sShow(pick([4, 5, 4, 5, 3, 2]), 1) },
+  { n: ['Șirul numerelor până la 5', 'La fila de números hasta 5', 'Counting in order to 5'], g: () => mSeq(0, 5) },
+  { n: ['Mai mult sau mai puțin, până la 5', 'Más o menos, hasta 5', 'More or less, up to 5'], g: p => mCmp(1, 5, p) },
+  { n: ['Numerele 6 și 7', 'Los números 6 y 7', 'The numbers 6 and 7'], g: () => sShow(pick([6, 7, 6, 7, 5]), 1) },
+  { n: ['Numerele 8, 9 și 10', 'Los números 8, 9 y 10', 'The numbers 8, 9 and 10'], g: () => sShow(pick([8, 9, 10, 8, 9, 10, 7]), 1) },
+  { n: ['Șirul numerelor până la 10', 'La fila de números hasta 10', 'Counting in order to 10'], g: () => mSeq(0, 10) },
+  { n: ['Comparăm numere până la 10', 'Comparamos números hasta 10', 'Comparing numbers to 10'], g: p => mCmp(1, 10, p) },
+
+  { ch: ['Adunarea până la 10', 'La suma hasta 10', 'Adding up to 10'],
+    n: ['Încă unul', 'Uno más', 'One more'], g: () => sAdd(ri(1, 4), 1, 1) },
+  { n: ['Adunări până la 5', 'Sumas hasta 5', 'Adding up to 5'], g: gAdd5 },
+  { n: ['Adunăm 1 sau 2', 'Sumamos 1 o 2', 'Adding 1 or 2'], g: () => { const a = ri(3, 8); return sAdd(a, ri(1, Math.min(2, 10 - a)), 1); } },
+  { n: ['Adunări până la 10', 'Sumas hasta 10', 'Adding up to 10'], g: gAdd10 },
+  { n: ['Dublele: 1 + 1, 2 + 2…', 'Los dobles: 1 + 1, 2 + 2…', 'Doubles: 1 + 1, 2 + 2…'], g: () => { const n = ri(1, 5); return sAdd(n, n, 1); } },
+  { n: ['Prietenii lui 10', 'Los amigos del 10', 'Friends of 10'], g: () => mBond(ri(1, 9), 10) },
+  { n: ['Numărul ascuns', 'El número escondido', 'The hidden number'], g: () => { const s = ri(4, 9); return mBond(ri(1, s - 1), s); } },
+
+  { ch: ['Scăderea până la 10', 'La resta hasta 10', 'Taking away up to 10'],
+    n: ['Cu unul mai puțin', 'Uno menos', 'One less'], g: () => sSub(ri(2, 6), 1, 1) },
+  { n: ['Scăderi până la 5', 'Restas hasta 5', 'Taking away up to 5'], g: gSub5 },
+  { n: ['Scădem 1 sau 2', 'Restamos 1 o 2', 'Taking away 1 or 2'], g: () => sSub(ri(4, 10), ri(1, 2), 1) },
+  { n: ['Scăderi până la 10', 'Restas hasta 10', 'Taking away up to 10'], g: gSub10 },
+  { n: ['Adunări și scăderi până la 10', 'Sumas y restas hasta 10', 'Adding and taking away to 10'], g: any(gAdd5, gAdd10, gSub5, gSub10) },
+
+  { ch: ['Numerele până la 20', 'Los números hasta 20', 'Numbers to 20'],
+    n: ['Numerele de la 11 la 20', 'Los números del 11 al 20', 'The numbers 11 to 20'], g: () => sShow(ri(11, 20), 2) },
+  { n: ['Șirul numerelor până la 20', 'La fila de números hasta 20', 'Counting in order to 20'], g: () => mSeq(8, 20) },
+  { n: ['Comparăm numere până la 20', 'Comparamos números hasta 20', 'Comparing numbers to 20'], g: p => mCmp(5, 20, p) },
+  { n: ['Zece și încă câteva', 'Diez y algunos más', 'Ten and some more'], g: () => sAdd(10, ri(1, 9), 2) },
+  { n: ['Adunări până la 20, fără trecere', 'Sumas hasta 20, sin llevar', 'Adding to 20, no carrying'], g: gAdd20 },
+  { n: ['Scăderi până la 20, fără trecere', 'Restas hasta 20, sin llevar', 'Taking away to 20, no borrowing'], g: gSub20 },
+  { n: ['Adunări cu trecere peste 10', 'Sumas que pasan de 10', 'Adding across 10'], g: gAddX },
+  { n: ['Scăderi cu trecere peste 10', 'Restas que pasan de 10', 'Taking away across 10'], g: gSubX },
+  { n: ['Adunări și scăderi până la 20', 'Sumas y restas hasta 20', 'Adding and taking away to 20'], g: any(gAdd20, gSub20, gAddX, gSubX) },
+
+  { ch: ['Numerele până la 100', 'Los números hasta 100', 'Numbers to 100'],
+    n: ['Zecile: 10, 20, 30…', 'Las decenas: 10, 20, 30…', 'The tens: 10, 20, 30…'], g: () => sShow(ri(1, 10) * 10, 10) },
+  { n: ['Zeci și unități', 'Decenas y unidades', 'Tens and ones'], g: () => sShow(ri(21, 99), 10) },
+  { n: ['Șirul numerelor până la 100', 'La fila de números hasta 100', 'Counting in order to 100'], g: () => mSeq(18, 100) },
+  { n: ['Comparăm numere până la 100', 'Comparamos números hasta 100', 'Comparing numbers to 100'], g: p => mCmp(10, 100, p) },
+  { n: ['Adunăm și scădem zeci', 'Sumamos y restamos decenas', 'Adding and taking away tens'], g: gTens },
+  { n: ['Zeci plus unități', 'Decenas más unidades', 'Tens plus ones'], g: () => { const t = ri(2, 9) * 10, u = ri(0, 7); return sAdd(t + (rnd(2) ? u : 0), ri(1, 9 - u), 10); } },
+  { n: ['Scădem unități', 'Restamos unidades', 'Taking away ones'], g: () => { const a = ri(2, 9) * 10 + ri(2, 9); return sSub(a, ri(1, a % 10), 10); } },
+  { n: ['Adunări până la 100, fără trecere', 'Sumas hasta 100, sin llevar', 'Adding to 100, no carrying'], g: gAdd100 },
+  { n: ['Scăderi până la 100, fără împrumut', 'Restas hasta 100, sin llevar', 'Taking away to 100, no borrowing'], g: gSub100 },
+  { n: ['Adunăm unități cu trecere', 'Sumamos unidades llevando', 'Adding ones with carrying'], g: () => { const u = ri(2, 9); return sAdd(ri(1, 8) * 10 + u, ri(11 - u, 9), 10); } },
+  { n: ['Adunări până la 100, cu trecere', 'Sumas hasta 100, llevando', 'Adding to 100 with carrying'], g: gAdd100c },
+  { n: ['Scădem unități cu împrumut', 'Restamos unidades llevando', 'Taking away ones with borrowing'], g: () => { const u = ri(0, 8); return sSub(ri(2, 9) * 10 + u, ri(u + 1, 9), 10); } },
+  { n: ['Scăderi până la 100, cu împrumut', 'Restas hasta 100, llevando', 'Taking away to 100 with borrowing'], g: gSub100b },
+  { n: ['Adunări și scăderi până la 100', 'Sumas y restas hasta 100', 'Adding and taking away to 100'], g: any(gAdd100, gAdd100c, gSub100, gSub100b) },
+
+  { ch: ['Înmulțirea', 'La multiplicación', 'Multiplying'],
+    n: ['Grupe egale', 'Grupos iguales', 'Equal groups'], g: () => { const a = ri(2, 4), b = ri(2, 5); return { ...sMul(a, b), txt: Array(a).fill(b).join(' + ') }; } },
+  { n: ['Înmulțirea cu 2', 'La tabla del 2', 'Times 2'], g: gMul(2) },
+  { n: ['Înmulțirea cu 3', 'La tabla del 3', 'Times 3'], g: gMul(3) },
+  { n: ['Înmulțirea cu 4', 'La tabla del 4', 'Times 4'], g: gMul(4) },
+  { n: ['Înmulțirea cu 5 și cu 10', 'Las tablas del 5 y del 10', 'Times 5 and times 10'], g: gMul(5, 10) },
+  { n: ['Înmulțirea cu 6 și cu 7', 'Las tablas del 6 y del 7', 'Times 6 and times 7'], g: gMul(6, 7) },
+  { n: ['Înmulțirea cu 8 și cu 9', 'Las tablas del 8 y del 9', 'Times 8 and times 9'], g: gMul(8, 9) },
+  { n: ['Toată tabla înmulțirii', 'Todas las tablas', 'All the times tables'], g: () => sMul(ri(2, 9), ri(2, 9)) },
+
+  { ch: ['Împărțirea', 'La división', 'Dividing'],
+    n: ['Jumătatea: împărțim la 2', 'La mitad: dividir entre 2', 'Half: dividing by 2'], g: gDiv(2) },
+  { n: ['Împărțiri la 3 și la 4', 'Dividir entre 3 y entre 4', 'Dividing by 3 and by 4'], g: gDiv(3, 4) },
+  { n: ['Împărțiri la 5 și la 10', 'Dividir entre 5 y entre 10', 'Dividing by 5 and by 10'], g: gDiv(5, 10) },
+  { n: ['Împărțiri la 6, 7, 8 și 9', 'Dividir entre 6, 7, 8 y 9', 'Dividing by 6, 7, 8 and 9'], g: gDiv(6, 7, 8, 9) },
+  { n: ['Înmulțiri și împărțiri', 'Multiplicar y dividir', 'Multiplying and dividing'], g: any(() => sMul(ri(2, 9), ri(2, 9)), () => sDiv(ri(2, 10), ri(2, 9))) },
 ];
-const PH_N = [3, 4, 8], PH_IC = ['🔍', '💡', '⚡'], PASS = 7;
+// questions in the three steps of a lesson, and how many of the last step must be right first time
+const PH_N = [4, 5, 10], PH_IC = ['🔍', '💡', '⚡'], PASS = 8;
 
 /* reading: letters -> syllables -> words -> sentences, in the language of the menus.
    Letters come with a picture word; words are written in the pieces a child builds them from. */
@@ -2112,53 +2196,119 @@ const RW = {
     '🐟f-i-sh 🚢sh-i-p 👞sh-oe 🐑sh-ee-p 🦈sh-ar-k 🧀ch-ee-se 🐤ch-i-ck 🌙m-oo-n 📖b-oo-k 🌳t-r-ee 🐝b-ee 🦷t-oo-th 🛁b-a-th 🍒ch-err-y'],
 };
 // sentence | question | right answer | three wrong answers; the pictures are shared by all languages
-const SPIC = ['🐱🥛', '👧🍎', '🐶🌳', '👨📖', '☀️☁️', '🐟🌊', '👩🎂', '🐝🌸', '👦🚲', '🌧️☔', '🐵🍌', '👵🎩'];
+const SPIC = ['🐱🥛', '👧🍎', '🐶🌳', '👨📖', '☀️☁️', '🐟🌊', '👩🎂', '🐝🌸', '👦🚲', '🌧️☔', '🐵🍌', '👵🎩',
+  '🐸💧', '🐦🌳', '👧⚽', '🐭🧀', '👦🛏️', '🐄🌿', '👩🚗', '⛄❄️', '🐻🍯', '👨🚂', '🐰🥕', '🌙⭐'];
 const RS = {
   ro: ['Pisica bea lapte.|Ce bea pisica?|lapte|apă|suc|ceai', 'Ana are un măr roșu.|Ce are Ana?|un măr|o pară|o minge|o carte', 'Câinele aleargă în parc.|Unde aleargă câinele?|în parc|în casă|la școală|pe plajă',
     'Tata citește o carte.|Cine citește?|tata|mama|bunica|pisica', 'Soarele este pe cer.|Unde este soarele?|pe cer|în apă|sub pat|în copac', 'Peștele înoată în apă.|Ce face peștele?|înoată|zboară|doarme|cântă',
     'Mama face o prăjitură.|Ce face mama?|o prăjitură|o supă|un desen|un pod', 'Albina zboară la floare.|Unde zboară albina?|la floare|la mare|la lună|la școală', 'Dan merge cu bicicleta.|Cu ce merge Dan?|cu bicicleta|cu trenul|cu barca|cu avionul',
-    'Afară plouă mult.|Cum este vremea?|plouă|ninge|e soare|bate vântul', 'Maimuța mănâncă o banană.|Ce mănâncă maimuța?|o banană|un măr|pâine|pește', 'Bunica are o pălărie.|Ce are bunica?|o pălărie|o umbrelă|o cheie|o minge'],
+    'Afară plouă mult.|Cum este vremea?|plouă|ninge|e soare|bate vântul', 'Maimuța mănâncă o banană.|Ce mănâncă maimuța?|o banană|un măr|pâine|pește', 'Bunica are o pălărie.|Ce are bunica?|o pălărie|o umbrelă|o cheie|o minge',
+    'Broasca sare în apă.|Unde sare broasca?|în apă|pe casă|în pat|în copac', 'Pasărea cântă în copac.|Unde cântă pasărea?|în copac|în apă|sub masă|în mașină', 'Ema se joacă cu mingea.|Cu ce se joacă Ema?|cu mingea|cu păpușa|cu trenul|cu pisica',
+    'Șoarecele mănâncă brânză.|Ce mănâncă șoarecele?|brânză|pește|morcovi|miere', 'Radu doarme în pat.|Unde doarme Radu?|în pat|pe scaun|în parc|în barcă', 'Vaca mănâncă iarbă.|Ce mănâncă vaca?|iarbă|carne|pâine|ouă',
+    'Mama merge cu mașina.|Cu ce merge mama?|cu mașina|cu trenul|cu barca|pe jos', 'Afară ninge și e frig.|Cum este afară?|e frig|e cald|e soare|plouă', 'Ursul caută miere.|Ce caută ursul?|miere|pește|mere|apă',
+    'Unchiul vine cu trenul.|Cine vine cu trenul?|unchiul|mama|bunica|pisica', 'Iepurele are un morcov.|Ce are iepurele?|un morcov|un măr|o floare|o minge', 'Noaptea vedem luna și stelele.|Când vedem luna?|noaptea|dimineața|la prânz|la școală'],
   es: ['El gato bebe leche.|¿Qué bebe el gato?|leche|agua|zumo|té', 'Ana tiene una manzana roja.|¿Qué tiene Ana?|una manzana|una pera|una pelota|un libro', 'El perro corre en el parque.|¿Dónde corre el perro?|en el parque|en casa|en la escuela|en la playa',
     'Papá lee un libro.|¿Quién lee?|papá|mamá|la abuela|el gato', 'El sol está en el cielo.|¿Dónde está el sol?|en el cielo|en el agua|bajo la cama|en el árbol', 'El pez nada en el agua.|¿Qué hace el pez?|nada|vuela|duerme|canta',
     'Mamá hace un pastel.|¿Qué hace mamá?|un pastel|una sopa|un dibujo|un puente', 'La abeja vuela a la flor.|¿A dónde vuela la abeja?|a la flor|al mar|a la luna|a la escuela', 'Dani va en bicicleta.|¿En qué va Dani?|en bicicleta|en tren|en barco|en avión',
-    'Hoy llueve mucho.|¿Qué tiempo hace?|llueve|nieva|hace sol|hace viento', 'El mono come un plátano.|¿Qué come el mono?|un plátano|una manzana|pan|pescado', 'La abuela tiene un sombrero.|¿Qué tiene la abuela?|un sombrero|un paraguas|una llave|una pelota'],
+    'Hoy llueve mucho.|¿Qué tiempo hace?|llueve|nieva|hace sol|hace viento', 'El mono come un plátano.|¿Qué come el mono?|un plátano|una manzana|pan|pescado', 'La abuela tiene un sombrero.|¿Qué tiene la abuela?|un sombrero|un paraguas|una llave|una pelota',
+    'La rana salta al agua.|¿A dónde salta la rana?|al agua|a la casa|a la cama|al árbol', 'El pájaro canta en el árbol.|¿Dónde canta el pájaro?|en el árbol|en el agua|bajo la mesa|en el coche', 'Ema juega con la pelota.|¿Con qué juega Ema?|con la pelota|con la muñeca|con el tren|con el gato',
+    'El ratón come queso.|¿Qué come el ratón?|queso|pescado|zanahorias|miel', 'Raúl duerme en la cama.|¿Dónde duerme Raúl?|en la cama|en la silla|en el parque|en el barco', 'La vaca come hierba.|¿Qué come la vaca?|hierba|carne|pan|huevos',
+    'Mamá va en coche.|¿En qué va mamá?|en coche|en tren|en barco|a pie', 'Fuera nieva y hace frío.|¿Qué tiempo hace fuera?|hace frío|hace calor|hace sol|llueve', 'El oso busca miel.|¿Qué busca el oso?|miel|pescado|manzanas|agua',
+    'El tío viene en tren.|¿Quién viene en tren?|el tío|mamá|la abuela|el gato', 'El conejo tiene una zanahoria.|¿Qué tiene el conejo?|una zanahoria|una manzana|una flor|una pelota', 'De noche vemos la luna y las estrellas.|¿Cuándo vemos la luna?|de noche|por la mañana|al mediodía|en la escuela'],
   en: ['The cat drinks milk.|What does the cat drink?|milk|water|juice|tea', 'Anna has a red apple.|What does Anna have?|an apple|a pear|a ball|a book', 'The dog runs in the park.|Where does the dog run?|in the park|at home|at school|on the beach',
     'Dad reads a book.|Who reads?|Dad|Mum|Grandma|the cat', 'The sun is in the sky.|Where is the sun?|in the sky|in the water|under the bed|in the tree', 'The fish swims in the water.|What does the fish do?|it swims|it flies|it sleeps|it sings',
     'Mum makes a cake.|What does Mum make?|a cake|a soup|a drawing|a bridge', 'The bee flies to the flower.|Where does the bee fly?|to the flower|to the sea|to the moon|to school', 'Dan rides a bike.|What does Dan ride?|a bike|a train|a boat|a plane',
-    'It rains a lot today.|What is the weather like?|it rains|it snows|it is sunny|it is windy', 'The monkey eats a banana.|What does the monkey eat?|a banana|an apple|bread|fish', 'Grandma has a hat.|What does Grandma have?|a hat|an umbrella|a key|a ball'],
+    'It rains a lot today.|What is the weather like?|it rains|it snows|it is sunny|it is windy', 'The monkey eats a banana.|What does the monkey eat?|a banana|an apple|bread|fish', 'Grandma has a hat.|What does Grandma have?|a hat|an umbrella|a key|a ball',
+    'The frog jumps into the water.|Where does the frog jump?|into the water|onto the house|into the bed|into the tree', 'The bird sings in the tree.|Where does the bird sing?|in the tree|in the water|under the table|in the car', 'Emma plays with the ball.|What does Emma play with?|the ball|the doll|the train|the cat',
+    'The mouse eats cheese.|What does the mouse eat?|cheese|fish|carrots|honey', 'Sam sleeps in the bed.|Where does Sam sleep?|in the bed|on the chair|in the park|in the boat', 'The cow eats grass.|What does the cow eat?|grass|meat|bread|eggs',
+    'Mum goes by car.|How does Mum go?|by car|by train|by boat|on foot', 'It snows and it is cold outside.|What is it like outside?|it is cold|it is hot|it is sunny|it rains', 'The bear looks for honey.|What does the bear look for?|honey|fish|apples|water',
+    'My uncle comes by train.|Who comes by train?|my uncle|Mum|Grandma|the cat', 'The rabbit has a carrot.|What does the rabbit have?|a carrot|an apple|a flower|a ball', 'At night we see the moon and the stars.|When do we see the moon?|at night|in the morning|at noon|at school'],
+};
+// short texts: text | question | right | wrong | wrong | question | right | wrong | wrong | a true sentence | a false sentence
+// the first six have two sentences, the last six have three; the pictures are shared by all languages
+const TPIC = ['🐶⚽', '👧📖', '🐦🌳', '👦🚲', '🌧️☂️', '🐟🌊', '🐻🍯', '👵🎂', '🐰🥕', '⛄❄️', '🚂⛰️', '🐝🌻'];
+const RT = {
+  ro: ['Rex este un câine mic. El se joacă cu o minge roșie.|Cine este Rex?|un câine|o pisică|un băiat|Ce culoare are mingea?|roșie|albastră|verde|Rex se joacă cu o minge.|Rex este o pisică.',
+    'Ana are o carte nouă. Ea citește în fiecare seară.|Ce are Ana?|o carte|o păpușă|o bicicletă|Când citește Ana?|seara|dimineața|la prânz|Ana citește seara.|Ana are o minge nouă.',
+    'O pasăre stă în copac. Ea are un cuib cu trei ouă.|Unde stă pasărea?|în copac|pe casă|în apă|Câte ouă sunt în cuib?|trei|două|cinci|Pasărea are un cuib.|În cuib sunt cinci ouă.',
+    'Dan are o bicicletă albastră. El merge cu ea în parc.|Ce culoare are bicicleta?|albastră|roșie|galbenă|Unde merge Dan?|în parc|la școală|la mare|Dan merge în parc.|Bicicleta este roșie.',
+    'Azi plouă. Mara își ia umbrela galbenă.|Cum este vremea?|plouă|ninge|e soare|Ce își ia Mara?|umbrela|pălăria|mingea|Umbrela este galbenă.|Azi ninge.',
+    'Peștele trăiește în mare. El înoată repede.|Unde trăiește peștele?|în mare|în copac|în casă|Cum înoată peștele?|repede|încet|deloc|Peștele înoată.|Peștele trăiește în copac.',
+    'Ursul Martin iubește mierea. Dimineața caută miere în pădure. Seara doarme în peșteră.|Ce iubește ursul?|mierea|peștele|merele|Unde doarme ursul?|în peșteră|în copac|în casă|Ursul caută miere în pădure.|Ursul doarme dimineața.',
+    'Bunica face o prăjitură cu mere. Ema o ajută în bucătărie. La final mănâncă împreună.|Cu ce este prăjitura?|cu mere|cu cireșe|cu banane|Cine o ajută pe bunica?|Ema|tata|pisica|Ema și bunica mănâncă împreună.|Prăjitura este cu banane.',
+    'Iepurele Țup locuiește în grădină. Îi plac morcovii dulci. În fiecare zi mănâncă doi morcovi.|Unde locuiește iepurele?|în grădină|în pădure|la școală|Câți morcovi mănâncă pe zi?|doi|trei|zece|Iepurelui îi plac morcovii.|Iepurele locuiește în pădure.',
+    'Iarna ninge mult. Copiii fac un om de zăpadă. Îi pun un morcov în loc de nas.|Ce fac copiii?|un om de zăpadă|o casă|un tort|Ce are omul de zăpadă în loc de nas?|un morcov|un măr|o piatră|Iarna ninge.|Copiii fac un castel.',
+    'Tata și Radu merg cu trenul la munte. Pe drum văd vaci și cai. Radu este foarte fericit.|Cu ce merg la munte?|cu trenul|cu mașina|cu avionul|Ce văd pe drum?|vaci și cai|pești|elefanți|Radu este fericit.|Ei merg la mare.',
+    'Albina zboară din floare în floare. Ea adună nectar. Din nectar face miere dulce.|Ce adună albina?|nectar|apă|frunze|Ce face albina din nectar?|miere|lapte|pâine|Albina zboară la flori.|Albina face lapte.'],
+  es: ['Rex es un perro pequeño. Juega con una pelota roja.|¿Quién es Rex?|un perro|un gato|un niño|¿De qué color es la pelota?|roja|azul|verde|Rex juega con una pelota.|Rex es un gato.',
+    'Ana tiene un libro nuevo. Lee todas las noches.|¿Qué tiene Ana?|un libro|una muñeca|una bicicleta|¿Cuándo lee Ana?|por la noche|por la mañana|al mediodía|Ana lee por la noche.|Ana tiene una pelota nueva.',
+    'Un pájaro está en el árbol. Tiene un nido con tres huevos.|¿Dónde está el pájaro?|en el árbol|en la casa|en el agua|¿Cuántos huevos hay en el nido?|tres|dos|cinco|El pájaro tiene un nido.|En el nido hay cinco huevos.',
+    'Dani tiene una bicicleta azul. Va con ella al parque.|¿De qué color es la bicicleta?|azul|roja|amarilla|¿A dónde va Dani?|al parque|a la escuela|a la playa|Dani va al parque.|La bicicleta es roja.',
+    'Hoy llueve. Mara coge su paraguas amarillo.|¿Qué tiempo hace?|llueve|nieva|hace sol|¿Qué coge Mara?|el paraguas|el sombrero|la pelota|El paraguas es amarillo.|Hoy nieva.',
+    'El pez vive en el mar. Nada muy rápido.|¿Dónde vive el pez?|en el mar|en un árbol|en una casa|¿Cómo nada el pez?|rápido|despacio|nunca|El pez nada.|El pez vive en un árbol.',
+    'Al oso Martín le encanta la miel. Por la mañana busca miel en el bosque. Por la noche duerme en su cueva.|¿Qué le encanta al oso?|la miel|el pescado|las manzanas|¿Dónde duerme el oso?|en su cueva|en un árbol|en una casa|El oso busca miel en el bosque.|El oso duerme por la mañana.',
+    'La abuela hace un pastel de manzana. Ema la ayuda en la cocina. Al final se lo comen juntas.|¿De qué es el pastel?|de manzana|de cereza|de plátano|¿Quién ayuda a la abuela?|Ema|papá|el gato|Ema y la abuela comen juntas.|El pastel es de plátano.',
+    'El conejo Tup vive en el jardín. Le gustan las zanahorias dulces. Cada día come dos zanahorias.|¿Dónde vive el conejo?|en el jardín|en el bosque|en la escuela|¿Cuántas zanahorias come al día?|dos|tres|diez|Al conejo le gustan las zanahorias.|El conejo vive en el bosque.',
+    'En invierno nieva mucho. Los niños hacen un muñeco de nieve. Le ponen una zanahoria de nariz.|¿Qué hacen los niños?|un muñeco de nieve|una casa|una tarta|¿Qué tiene el muñeco de nariz?|una zanahoria|una manzana|una piedra|En invierno nieva.|Los niños hacen un castillo.',
+    'Papá y Raúl van en tren a la montaña. Por el camino ven vacas y caballos. Raúl está muy contento.|¿En qué van a la montaña?|en tren|en coche|en avión|¿Qué ven por el camino?|vacas y caballos|peces|elefantes|Raúl está contento.|Van a la playa.',
+    'La abeja vuela de flor en flor. Recoge néctar. Con el néctar hace miel dulce.|¿Qué recoge la abeja?|néctar|agua|hojas|¿Qué hace la abeja con el néctar?|miel|leche|pan|La abeja vuela a las flores.|La abeja hace leche.'],
+  en: ['Rex is a small dog. He plays with a red ball.|Who is Rex?|a dog|a cat|a boy|What colour is the ball?|red|blue|green|Rex plays with a ball.|Rex is a cat.',
+    'Anna has a new book. She reads every evening.|What does Anna have?|a book|a doll|a bike|When does Anna read?|in the evening|in the morning|at noon|Anna reads in the evening.|Anna has a new ball.',
+    'A bird sits in the tree. It has a nest with three eggs.|Where is the bird?|in the tree|on the house|in the water|How many eggs are in the nest?|three|two|five|The bird has a nest.|There are five eggs in the nest.',
+    'Dan has a blue bike. He rides it to the park.|What colour is the bike?|blue|red|yellow|Where does Dan go?|to the park|to school|to the beach|Dan goes to the park.|The bike is red.',
+    'It is raining today. Mara takes her yellow umbrella.|What is the weather like?|it rains|it snows|it is sunny|What does Mara take?|her umbrella|her hat|her ball|The umbrella is yellow.|It is snowing today.',
+    'The fish lives in the sea. It swims very fast.|Where does the fish live?|in the sea|in a tree|in a house|How does the fish swim?|fast|slowly|never|The fish swims.|The fish lives in a tree.',
+    'Martin the bear loves honey. In the morning he looks for honey in the forest. At night he sleeps in his cave.|What does the bear love?|honey|fish|apples|Where does the bear sleep?|in his cave|in a tree|in a house|The bear looks for honey in the forest.|The bear sleeps in the morning.',
+    'Grandma makes an apple cake. Emma helps her in the kitchen. In the end they eat it together.|What kind of cake is it?|an apple cake|a cherry cake|a banana cake|Who helps Grandma?|Emma|Dad|the cat|Emma and Grandma eat together.|It is a banana cake.',
+    'Hop the rabbit lives in the garden. He likes sweet carrots. Every day he eats two carrots.|Where does the rabbit live?|in the garden|in the forest|at school|How many carrots does he eat a day?|two|three|ten|The rabbit likes carrots.|The rabbit lives in the forest.',
+    'In winter it snows a lot. The children make a snowman. They give him a carrot for a nose.|What do the children make?|a snowman|a house|a cake|What is the nose of the snowman?|a carrot|an apple|a stone|It snows in winter.|The children make a castle.',
+    'Dad and Sam go to the mountains by train. On the way they see cows and horses. Sam is very happy.|How do they go to the mountains?|by train|by car|by plane|What do they see on the way?|cows and horses|fish|elephants|Sam is happy.|They go to the beach.',
+    'The bee flies from flower to flower. It collects nectar. It makes sweet honey from the nectar.|What does the bee collect?|nectar|water|leaves|What does the bee make from nectar?|honey|milk|bread|The bee flies to the flowers.|The bee makes milk.'],
 };
 const EN2 = ['at', 'in', 'on', 'up', 'it', 'an', 'us', 'if', 'am', 'is', 'go', 'no', 'so', 'me', 'we', 'he'];
 const rCut = s => { const m = s.match(/^([^\p{L}]+)(.+)$/u); return { e: m[1], p: m[2].split('-'), w: m[2].replace(/-/g, '') }; };
-const RLD = {}, RWD = {}, RSD = {};
+const RLD = {}, RWD = {}, RSD = {}, RTD = {};
 for (const k of LANGS) {
   RLD[k] = RL[k].map(g => g.split(' ').map(s => { const c = rCut(s.slice(1)); return { l: s[0], e: c.e, w: c.w }; }));
   RWD[k] = RW[k].map(g => g.split(' ').map(rCut));
   RSD[k] = RS[k].map(s => { const a = s.split('|'); return { t: a[0], q: a[1], a: a[2], x: a.slice(3) }; });
+  RTD[k] = RT[k].map(s => { const a = s.split('|'); return { t: a[0], qs: [{ q: a[1], a: a[2], x: a.slice(3, 5) }, { q: a[5], a: a[6], x: a.slice(7, 9) }], yes: a[9], no: a[10] }; });
 }
 const rChoice = (txt, q, stim, ok, others, cls, sy, col) => { const o = shuffle([ok, ...others]); return { mode: 'choice', txt, q, stim, o: { opts: o, ans: o.indexOf(ok) }, cls, sy: sy || [], col }; };
 const rTF = (txt, q, stim, yes) => ({ mode: 'choice', txt, q, stim, o: { opts: ['👍', '👎'], ans: yes ? 0 : 1 }, cls: 'em', sy: [] });
 const wordH = w => `<span class="word">${w}</span>`;
 const sentH = s => `<span class="sent">${s}</span>`;
-function rLetter(g, ph) {
-  const D = RLD[S.lang], x = pick(D[g]), others = sample(D.slice(0, g + 1).flat().filter(y => y.l !== x.l), 3).map(y => y.l);
+// spec = [[group, from, to], ...]: the letters this lesson teaches; wrong answers come from every letter met so far
+function rLetter(spec, ph, n) {
+  const D = RLD[S.lang], pool = spec.flatMap(([g, a, b]) => D[g].slice(a, b)), x = pick(pool), lc = s => s.toLocaleLowerCase('es');
+  const known = D.slice(0, Math.max(...spec.map(s => s[0])) + 1).flat().filter(y => y.l !== x.l), oth = sample(known, 3), others = oth.map(y => y.l);
   if (ph === 0) return rChoice('l0' + x.l, T('rd_letter', x.l), `${big(x.e)}<span class="word"><b class="hl">${up(x.w[0])}</b>${up(x.w.slice(1))}</span>`, x.l, others, 'ltr', [x.l, x.w]);
-  if (ph === 1) return rChoice('l1' + x.l, T('rd_same'), `<span class="word lc">${x.l.toLocaleLowerCase('es')}</span>`, x.l, others, 'ltr', [x.l]);
+  const kind = ph === 1 ? ['same', 'small'][n % 2] : ['first', 'small', 'pic', 'same'][n % 4];
+  if (kind === 'same') return rChoice('l1' + x.l, T('rd_same'), `<span class="word lc">${lc(x.l)}</span>`, x.l, others, 'ltr', [x.l]);
+  if (kind === 'small') return rChoice('l3' + x.l, T('rd_small'), `<span class="word">${x.l}</span>`, lc(x.l), others.map(lc), 'ltr low', [x.l]);
+  if (kind === 'pic') return rChoice('l4' + x.l, T('rd_startsPic', x.l), `<span class="word">${x.l}</span>`, x.e, oth.map(y => y.e), 'em', [x.l]);
   return rChoice('l2' + x.l, T('q_first'), big(x.e), x.l, others, 'ltr', [x.w]);
 }
-function rSyl(ph) {
-  const C = [...'mnlrstpdbvf'], V5 = [...'aeiou'], en = S.lang === 'en';
-  if (ph === 2) { // a picture: which two letters does its word start with?
-    const w = pick(RWD[S.lang][0].concat(RWD[S.lang][1]).filter(x => /^[^aeiouăâîhq][aeiou]/.test(x.w))), c = w.w[0], v = w.w[1];
-    return rChoice('s2' + w.w, T('rd_starts'), big(w.e), up(c + v), [...sample(V5.filter(x => x !== v), 2).map(x => up(c + x)), up(pick(C.filter(x => x !== c)) + v)], 'ltr', [w.w]);
+// cons = the consonants of this lesson; part = which third of the English two-letter words (3 = all)
+function rSyl(ph, n, cons, part) {
+  const C = [...cons], V5 = [...'aeiou'], en = S.lang === 'en', E2 = part > 2 ? EN2 : EN2.slice(part * 5, part * 5 + 6);
+  const kind = ph === 0 ? 'build' : ph === 1 ? 'same' : ['pic', 'same', 'hear'][n % 3];
+  if (kind === 'pic') { // a picture: which two letters does its word start with?
+    const all = RWD[S.lang][0].concat(RWD[S.lang][1]).filter(x => /^[^aeiouăâîhq][aeiou]/.test(x.w)), mine = all.filter(x => C.includes(x.w[0]));
+    const w = pick(mine.length > 3 ? mine : all), c = w.w[0], v = w.w[1];
+    return rChoice('s2' + w.w, T('rd_starts'), big(w.e), up(c + v), [...sample(V5.filter(x => x !== v), 2).map(x => up(c + x)), up(pick([...'mnlrstpdbvf'].filter(x => x !== c)) + v)], 'ltr', [w.w]);
   }
-  const s = en ? pick(EN2) : pick(C) + pick(V5);
-  if (ph === 0) return { mode: 'build', txt: 's0' + s, q: T('rd_makeSyl', up(s)), qs: T('rd_makeSyl', s), pic: '', parts: [...s].map(up), extra: [up(pick([...C, ...V5].filter(x => !s.includes(x))))], model: up(s), sy: [s] };
-  const others = en ? sample(EN2.filter(x => x !== s), 3) : [s[0] + pick(V5.filter(x => x !== s[1])), pick(C.filter(x => x !== s[0])) + s[1], s[1] + s[0]];
+  const s = en ? pick(E2) : pick(C) + pick(V5);
+  if (kind === 'build' || kind === 'hear') return { mode: 'build', txt: 's' + kind + s, q: T('rd_makeSyl', up(s)), qs: T('rd_makeSyl', s), pic: '', parts: [...s].map(up),
+    extra: sample([...'mnlrstpdbvf', ...V5].filter(x => !s.includes(x)), kind === 'hear' ? 2 : 1).map(up), model: kind === 'build' ? up(s) : '', sy: [s] };
+  const others = en ? sample(EN2.filter(x => x !== s), 3) : [s[0] + pick(V5.filter(x => x !== s[1])), pick([...'mnlrstpdbvf'].filter(x => x !== s[0])) + s[1], s[1] + s[0]];
   return rChoice('s1' + s, T('rd_same'), `<span class="word lc">${s}</span>`, up(s), others.map(up), 'ltr', [s]);
 }
-function rWord(lv, ph, n) {
-  const ws = RWD[S.lang][lv], w = pick(ws), oth = k => sample(ws.filter(x => x !== w), k);
-  const kind = ph === 0 ? 'build' : ph === 1 ? 'w2p' : ['p2w', 'buildx', 'w2p', 'tf'][n % 4];
+// half = 0 or 1: the first or the second half of the words of this level
+function rWord(lv, ph, n, half) {
+  const all = RWD[S.lang][lv], mid = Math.ceil(all.length / 2), ws = half === 0 ? all.slice(0, mid) : half === 1 ? all.slice(mid) : all;
+  const w = pick(ws), oth = k => sample(all.filter(x => x !== w), k);
+  const kind = ph === 0 ? 'build' : ph === 1 ? ['w2p', 'p2w'][n % 2] : ['p2w', 'buildx', 'w2p', 'tf'][n % 4];
   if (kind === 'build' || kind === 'buildx') {
     const parts = (w.p.length > 1 ? w.p : [...w.w]).map(up);
     return { mode: 'build', txt: kind + w.w, q: T('rd_makeWord'), pic: big(w.e), parts, extra: [], model: kind === 'build' ? parts.join('·') : '', sy: [w.w] };
@@ -2168,34 +2318,74 @@ function rWord(lv, ph, n) {
   const yes = rnd(2);
   return rTF('tf' + w.w, T('rd_match'), big(w.e) + '<span class="brk"></span>' + wordH(up((yes ? w : oth(1)[0]).w)), yes);
 }
-// which: 0 = read a sentence, 1 = put its words in order, 2 = answer a question about it
-function rSent(which, ph, n) {
-  const ss = RSD[S.lang], i = rnd(ss.length), s = ss[i], e = SPIC[i];
+// which: 0 = read a sentence, 1 = put its words in order, 2 = answer a question about it; set = which dozen of sentences
+function rSent(which, ph, n, set) {
+  const ss = RSD[S.lang], i = set * 12 + rnd(12), s = ss[i], e = SPIC[i], rest = () => Array.from({ length: 12 }, (_, k) => set * 12 + k).filter(k => k !== i);
   const build = model => ({ mode: 'build', txt: 'sb' + i, q: T('rd_order'), pic: `<span class="mid">${e}</span>`, parts: s.t.replace(/[.!?¿¡]/g, '').split(' '), extra: [], model: model ? s.t : '', sy: [s.t], wide: true });
-  const s2p = () => rChoice('s2p' + i, T('rd_readPick'), sentH(s.t), e, sample(SPIC.filter((_, k) => k !== i), 3), 'em duo');
-  if (which === 2) return rChoice('sq' + i, s.q, (ph === 0 ? `<span class="mid">${e}</span><span class="brk"></span>` : '') + sentH(s.t), s.a, s.x, 'txt', [], true);
+  const s2p = () => rChoice('s2p' + i, T('rd_readPick'), sentH(s.t), e, sample(rest(), 3).map(k => SPIC[k]), 'em duo');
+  // the question about a sentence: in the first step the cat reads the sentence out and a picture helps
+  if (which === 2) return rChoice('sq' + i, s.q, (ph === 0 ? `<span class="mid">${e}</span><span class="brk"></span>` : '') + sentH(s.t), s.a, s.x, 'txt', ph === 0 ? [s.t] : [], true);
   if (which === 1) return build(ph === 0);
   if (ph === 0) return build(true);
   if (ph === 1 || n % 2 === 0) return s2p();
-  const yes = rnd(2), j = yes ? i : pick(ss.map((_, k) => k).filter(k => k !== i));
+  const yes = rnd(2), j = yes ? i : pick(rest());
   return rTF('stf' + i, T('rd_match'), `<span class="mid">${SPIC[j]}</span><span class="brk"></span>` + sentH(s.t), yes);
 }
+// a short text of two or three sentences, then a question about it (tf = a sentence to judge as true or false)
+function rText(tf, ph, n, from, to) {
+  const i = from + rnd(to - from), t = RTD[S.lang][i], pic = ph === 0 ? `<span class="mid">${TPIC[i]}</span><span class="brk"></span>` : '', text = `<span class="sent text">${t.t}</span>`;
+  if (tf) { const yes = rnd(2); return { ...rTF('tt' + i + yes, T('rd_true'), `${pic}${text}<span class="brk"></span><span class="claim">${yes ? t.yes : t.no}</span>`, yes), sy: ph === 0 ? [t.t] : [] }; }
+  const k = rnd(2), q = t.qs[k];
+  return rChoice('tq' + i + k, q.q, pic + text, q.a, q.x, 'txt', ph === 0 ? [t.t] : [], true);
+}
+// the name of a letter lesson is made from the letters themselves, which differ from one language to the next
+const lName = (pre, spec) => LANGS.map((k, i) => {
+  const ls = spec.flatMap(([g, a, b]) => RLD[k][g].slice(a, b)).map(x => x.l);
+  return pre[i] + ' ' + (ls.length === 2 ? ls.join([' și ', ' y ', ' and '][i]) : ls.join(', '));
+});
+const LET = ['Literele', 'Las letras', 'The letters'], VOW = ['Vocalele', 'Las vocales', 'The vowels'], REV = ['Repetăm:', 'Repasamos:', 'Again:'];
+const rL = (pre, spec, ch) => ({ ch, n: lName(pre, spec), g: (p, n) => rLetter(spec, p, n) });
+const num = (name, k) => name.map(s => s + ' ' + k);
+const W0 = ['Cuvinte scurte', 'Palabras cortas', 'Short words'], W1 = ['Cuvinte din două silabe', 'Palabras de dos sílabas', 'Four-letter words'], W2 = ['Cuvinte lungi', 'Palabras largas', 'Long words'],
+  W3 = ['Grupuri de litere', 'Letras dobles', 'Letter pairs'], S0 = ['Citim propoziții', 'Leemos frases', 'Reading sentences'], S1 = ['Cuvintele în ordine', 'Las palabras en orden', 'Words in order'],
+  S2 = ['Înțeleg propoziția', 'Entiendo la frase', 'I understand the sentence'];
 const RLESSONS = [
-  { n: ['Vocalele', 'Las vocales', 'The vowels'], g: p => rLetter(0, p) },
-  { n: ['Literele M, N, L, R, S, T', 'Las letras M, N, L, R, S, T', 'The letters M, N, L, R, S, T'], g: p => rLetter(1, p) },
-  { n: ['Literele P, C, D, B, V, F', 'Las letras P, C, D, B, V, F', 'The letters P, C, D, B, V, F'], g: p => rLetter(2, p) },
-  { n: ['Literele G, H, J, Z, Ș, Ț', 'Las letras G, H, J, Z, Q, K', 'The letters G, H, J, K, W, Z'], g: p => rLetter(3, p) },
-  { n: ['Silabe', 'Sílabas', 'Joining two letters'], g: p => rSyl(p) },
-  { n: ['Cuvinte scurte', 'Palabras cortas', 'Short words'], g: (p, n) => rWord(0, p, n) },
-  { n: ['Cuvinte din două silabe', 'Palabras de dos sílabas', 'Four-letter words'], g: (p, n) => rWord(1, p, n) },
-  { n: ['Cuvinte lungi', 'Palabras largas', 'Long words'], g: (p, n) => rWord(2, p, n) },
-  { n: ['Grupuri: ce, ci, ge, gi, che, chi', 'Letras dobles: ch, ll, qu, ñ, rr', 'Letter pairs: sh, ch, oo, ee, th'], g: (p, n) => rWord(3, p, n) },
-  { n: ['Propoziții', 'Frases', 'Sentences'], g: (p, n) => rSent(0, p, n) },
-  { n: ['Cuvintele în ordine', 'Las palabras en orden', 'Words in order'], g: (p, n) => rSent(1, p, n) },
-  { n: ['Înțeleg ce citesc', 'Entiendo lo que leo', 'I understand what I read'], g: (p, n) => rSent(2, p, n) },
+  rL(VOW, [[0, 0, 3]], ['Literele', 'Las letras', 'The letters']), rL(VOW, [[0, 3, 5]]),
+  { n: ['Toate vocalele', 'Todas las vocales', 'All the vowels'], g: (p, n) => rLetter([[0, 0, 5]], p, n) },
+  rL(LET, [[1, 0, 2]]), rL(LET, [[1, 2, 4]]), rL(LET, [[1, 4, 6]]), rL(REV, [[1, 0, 6]]),
+  rL(LET, [[2, 0, 2]]), rL(LET, [[2, 2, 4]]), rL(LET, [[2, 4, 6]]), rL(REV, [[2, 0, 6]]),
+  rL(LET, [[3, 0, 2]]), rL(LET, [[3, 2, 4]]), rL(LET, [[3, 4, 6]]),
+  { n: ['Toate literele', 'Todas las letras', 'All the letters'], g: (p, n) => rLetter([[0, 0, 5], [1, 0, 6], [2, 0, 6], [3, 0, 6]], p, n) },
+
+  { ch: ['Silabele', 'Las sílabas', 'Two letters together'],
+    n: ['Silabe cu M, N, L', 'Sílabas con M, N, L', 'Two-letter words 1'], g: (p, n) => rSyl(p, n, 'mnl', 0) },
+  { n: ['Silabe cu R, S, T', 'Sílabas con R, S, T', 'Two-letter words 2'], g: (p, n) => rSyl(p, n, 'rst', 1) },
+  { n: ['Silabe cu P, D, B, V, F', 'Sílabas con P, D, B, V, F', 'Two-letter words 3'], g: (p, n) => rSyl(p, n, 'pdbvf', 2) },
+  { n: ['Toate silabele', 'Todas las sílabas', 'All the two-letter words'], g: (p, n) => rSyl(p, n, 'mnlrstpdbvf', 3) },
+
+  { ch: ['Cuvintele', 'Las palabras', 'Words'], n: num(W0, 1), g: (p, n) => rWord(0, p, n, 0) }, { n: num(W0, 2), g: (p, n) => rWord(0, p, n, 1) },
+  { n: num(W1, 1), g: (p, n) => rWord(1, p, n, 0) }, { n: num(W1, 2), g: (p, n) => rWord(1, p, n, 1) },
+  { n: num(W2, 1), g: (p, n) => rWord(2, p, n, 0) }, { n: num(W2, 2), g: (p, n) => rWord(2, p, n, 1) },
+  { n: num(W3, 1), g: (p, n) => rWord(3, p, n, 0) }, { n: num(W3, 2), g: (p, n) => rWord(3, p, n, 1) },
+
+  { ch: ['Propozițiile', 'Las frases', 'Sentences'], n: num(S0, 1), g: (p, n) => rSent(0, p, n, 0) },
+  { n: num(S1, 1), g: (p, n) => rSent(1, p, n, 0) }, { n: num(S2, 1), g: (p, n) => rSent(2, p, n, 0) },
+  { n: num(S0, 2), g: (p, n) => rSent(0, p, n, 1) }, { n: num(S1, 2), g: (p, n) => rSent(1, p, n, 1) }, { n: num(S2, 2), g: (p, n) => rSent(2, p, n, 1) },
+
+  { ch: ['Textele', 'Los textos', 'Short texts'],
+    n: ['Două propoziții', 'Dos frases', 'Two sentences'], g: (p, n) => rText(0, p, n, 0, 6) },
+  { n: ['Un text scurt', 'Un texto corto', 'A short text'], g: (p, n) => rText(0, p, n, 6, 12) },
+  { n: ['Adevărat sau fals?', '¿Verdadero o falso?', 'True or false?'], g: (p, n) => rText(1, p, n, 0, 12) },
 ];
-// the two paths: sums and reading; base = how many lessons are open from the start for each age group
-const TRACKS = { m: { list: LESSONS, base: [0, 6, 11] }, r: { list: RLESSONS, base: [0, 5, 9] } };
+// the two paths: sums and reading; base = the lesson each age group starts on (everything before it is open too)
+const TRACKS = { m: { list: LESSONS, base: [0, 20, 43] }, r: { list: RLESSONS, base: [0, 19, 27] } };
+// progress saved on the earlier, shorter paths: an old lesson that was done counts for the new ones that cover it
+if (S.school.v !== 2) {
+  const move = (old, map) => { let top = -1, st = 1; (old || []).forEach((v, i) => { if (v && map[i] != null) { top = Math.max(top, map[i]); st = Math.max(st, v); } }); return Array.from({ length: top + 1 }, () => st); };
+  S.school.m = move(S.school.m, [3, 7, 9, 12, 14, 19, 22, 24, 26, 25, 28, 33, 36, 39, 37, 42, 43, 47, 46, 50, 53, 55]);
+  S.school.r = move(S.school.r, [2, 6, 10, 14, 18, 20, 22, 24, 26, 27, 28, 29]);
+  S.school.v = 2; save();
+}
 const tabKey = () => (S.school.tab === 'r' ? 'r' : 'm');
 const schoolDone = () => S.school.m.filter(Boolean).length + S.school.r.filter(Boolean).length;
 const schoolAll = () => LESSONS.length + RLESSONS.length;
@@ -2206,8 +2396,9 @@ function vSchool() {
   const nextI = Math.max(base, last + 1);
   const rows = tr.list.map((L, i) => {
     const open = i <= base || st[i - 1] || st[i];
-    return open ? `<button class="lesson${i === nextI ? ' next' : ''}" data-act="lesson" data-i="${i}"><b>${i + 1}</b><span>${L.n[li()]}</span>${starsStr(st[i] || 0)}</button>`
-      : `<button class="lesson" disabled><b>🔒</b><span>${L.n[li()]}</span></button>`;
+    const head = L.ch ? `<h3 class="l-ch">${L.ch[li()]}</h3>` : '';
+    return head + (open ? `<button class="lesson${i === nextI ? ' next' : ''}" data-act="lesson" data-i="${i}"><b>${i + 1}</b><span>${L.n[li()]}</span>${starsStr(st[i] || 0)}</button>`
+      : `<button class="lesson" disabled><b>🔒</b><span>${L.n[li()]}</span></button>`);
   }).join('');
   app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('school')}</h2><span class="pill">${schoolDone()} / ${schoolAll()}</span></header>
     <div class="body"><div class="seg tabs2">${[['m', '🧮', 'sc_math'], ['r', '📖', 'sc_read']].map(([v, ic, s]) => `<button data-act="stab" data-k="${v}" aria-pressed="${k === v}">${ic} ${T(s)}</button>`).join('')}</div>
@@ -2247,7 +2438,7 @@ function mathFmt(it) {
   it.sy = [];
   if (cur.ph === 0) {
     it.mode = 'beads';
-    it.q = T('sc_i_' + it.kind, it.kind === 'div' || it.kind === 'mul' || show ? it.a : it.b, it.b);
+    it.q = T('sc_i_' + it.kind, bond ? it.target : it.kind === 'div' || it.kind === 'mul' || show ? it.a : it.b, it.b);
     return;
   }
   const f = cur.ph === 1 ? 'choice' : ['choice', 'pad', 'tf', 'pop'][cur.n % 4];
@@ -2259,7 +2450,7 @@ function mathFmt(it) {
   it.mode = 'choice';
   if (f === 'tf') {
     const yes = rnd(2), v = yes ? it.ans : Math.abs(it.ans + pick([-1, 1, 2, it.ans > 2 ? -2 : 3]));
-    it.stim = expr(show ? String(v) : bond ? `${it.a} + ${v} = 10` : `${it.txt} = ${v}`);
+    it.stim = expr(show ? String(v) : bond ? `${it.a} + ${v} = ${it.target}` : `${it.txt} = ${v}`);
     it.o = { opts: ['👍', '👎'], ans: yes ? 0 : 1 }; it.cls = 'em';
   } else { it.o = sOpts(it.ans); it.cls = 'num'; it.pop = f === 'pop'; }
 }
@@ -2282,7 +2473,7 @@ function lessonStep() {
   const list = TRACKS[cur.tr].list;
   let L = cur.L;
   // practice mixes in two questions from earlier lessons so that old skills stay fresh
-  if (cur.ph === 2 && cur.i > 0 && (cur.n === 2 || cur.n === 5)) L = list[rnd(cur.i)];
+  if (cur.ph === 2 && cur.i > 0 && (cur.n === 3 || cur.n === 7)) L = list[Math.max(0, cur.i - 5) + rnd(Math.min(5, cur.i))];
   let it; for (let k = 0; k < 40; k++) { it = L.g(cur.ph, cur.n); if (!cur.seen.has(it.txt)) break; }
   cur.seen.add(it.txt); cur.it = it; cur.wrong = 0; cur.lock = false;
   if (!it.mode) mathFmt(it);
@@ -2366,7 +2557,7 @@ const SCHOOL_ACT = {
     const ok = it.kind === 'mul' ? sum === it.target && even && (rows.length === it.a || rows.length === it.b)
       : it.kind === 'div' ? even && rows.length === it.b && rows[0] === it.ans : sum === it.target;
     if (ok) {
-      const ex = $('.s-top'); ex.innerHTML = `<span class="expr good">${it.kind === 'show' ? it.txt : it.kind === 'bond' ? `${it.a} + ${it.b} = 10` : `${it.txt} = ${it.ans}`}</span>`;
+      const ex = $('.s-top'); ex.innerHTML = `<span class="expr good">${it.kind === 'show' ? it.txt : it.kind === 'bond' ? `${it.a} + ${it.b} = ${it.target}` : `${it.txt} = ${it.ans}`}</span>`;
       lessonGood(1300);
     } else {
       lessonBad();
@@ -2437,7 +2628,7 @@ const ACT = {
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
-    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.school = { m: [], r: [] }; S.setup = false; save(); show('title');
+    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.school = { m: [], r: [], v: 2 }; S.setup = false; save(); show('title');
   },
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {
