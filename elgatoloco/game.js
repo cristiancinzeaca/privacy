@@ -12,7 +12,7 @@ const LANGS = ['ro', 'es', 'en'];
 
 /* ---------- state ---------- */
 const KEY = 'elgatoloco-v1';
-const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true, stat: { plays: 0, smart: 0, daily: 0 }, daily: null };
+const S = { lang: 'ro', age: 1, learn: 'both', sound: true, music: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true, stat: { plays: 0, smart: 0, daily: 0 }, daily: null };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 if (!S.school || !Array.isArray(S.school.m)) S.school = { m: [] };
 if (!Array.isArray(S.school.r)) S.school.r = [];
@@ -77,6 +77,7 @@ const STR = {
   learn: ['Învăț cuvinte în', 'Aprendo palabras en', 'I learn words in'],
   both: ['Ambele', 'Ambos', 'Both'],
   sound: ['Sunet', 'Sonido', 'Sound'],
+  music: ['Muzică', 'Música', 'Music'],
   on: ['Pornit', 'Activado', 'On'],
   off: ['Oprit', 'Desactivado', 'Off'],
   settings: ['Setări', 'Ajustes', 'Settings'],
@@ -371,6 +372,57 @@ const cat = pose => {
     : `<img class="catimg" src="assets/cat_${pose}.webp" alt="" draggable="false">`;
 };
 
+/* ---------- drawn pictures instead of emoji ----------
+   Every picture emoji has a drawing in assets/em/<code points>.webp (made by tools/batch_em.py).
+   Whatever text lands in the page is scanned and the emoji in it swapped for its drawing, so the game
+   looks the same on every phone. EMK lists the drawings that exist (written by tools/em_index.py). */
+const EMK = new Set('1f308 1f30a 1f30b 1f319 1f31f 1f327 1f32a 1f330 1f331 1f332 1f333 1f334 1f336 1f338 1f339 1f33a 1f33b 1f33c 1f33d 1f33e 1f33f 1f340 1f343 1f344 1f345 1f347 1f349 1f34a 1f34b 1f34c 1f34d 1f34e 1f34f 1f350 1f351 1f352 1f353 1f356 1f357 1f35a 1f35e 1f369 1f36a 1f36b 1f36d 1f36f 1f370 1f372 1f374 1f37d 1f381 1f382 1f388 1f38b 1f392 1f393 1f3a9 1f3ae 1f3af 1f3b2 1f3b5 1f3b8 1f3b9 1f3ba 1f3bb 1f3be 1f3c0 1f3c1 1f3c5 1f3c6 1f3c8 1f3d0 1f3d4 1f3d6 1f3dc 1f3dd 1f3e0 1f3f0 1f404 1f406 1f409 1f40a 1f40b 1f40c 1f40d 1f40f 1f410 1f411 1f412 1f414 1f417 1f418 1f419 1f41a 1f41b 1f41c 1f41d 1f41e 1f41f 1f420 1f421 1f422 1f424 1f426 1f427 1f428 1f42b 1f42c 1f42d 1f42e 1f42f 1f430 1f431 1f432 1f433 1f434 1f435 1f436 1f437 1f438 1f439 1f43a 1f43b 1f43b-200d-2744 1f43c 1f43e 1f43f 1f441 1f442 1f443 1f444 1f44d 1f44e 1f451 1f453 1f455 1f456 1f457 1f45e 1f45f 1f466 1f467 1f468 1f469 1f475 1f47b 1f47d 1f48d 1f48e 1f496 1f497 1f49a 1f49c 1f4a1 1f4a5 1f4a7 1f4bb 1f4d2 1f4d6 1f4f1 1f4f7 1f50d 1f511 1f512 1f514 1f525 1f528 1f52e 1f56f 1f577 1f578 1f5dd 1f5fa 1f606 1f60b 1f639 1f63b 1f680 1f681 1f682 1f68c 1f690 1f697 1f69c 1f6a2 1f6a7 1f6aa 1f6b2 1f6c1 1f6cf 1f90d 1f916 1f941 1f944 1f947 1f948 1f949 1f952 1f954 1f955 1f95a 1f95b 1f95c 1f95d 1f963 1f965 1f966 1f96c 1f980 1f981 1f983 1f984 1f985 1f986 1f987 1f988 1f989 1f98a 1f98b 1f98c 1f98e 1f98f 1f990 1f991 1f992 1f993 1f994 1f997 1f998 1f999 1f99b 1f99c 1f99d 1f99e 1f99f 1f9a1 1f9a2 1f9a9 1f9ab 1f9ac 1f9ad 1f9b4 1f9b5 1f9b7 1f9c0 1f9c2 1f9c3 1f9c5 1f9ca 1f9d9 1f9e3 1f9e4 1f9e6 1f9ee 1f9f1 1f9f8 1f9f9 1fa90 1fa91 1fa94 1fab2 1fae7 23f0 23f1 2600 2601 2602 2604 2614 2699 26a1 26bd 26c4 26f0 26f5 2702 2708 270b 270f 2728 2744 2764 2b50'.split(' '));
+const EM_RE = /[\u{1F300}-\u{1FAFF}☀-➿⬀-⯿←-⇿⌀-⏿■-◿]️?(?:‍[\u{1F300}-\u{1FAFF}☀-➿]️?)*/gu;
+const emKey = e => [...e].filter(c => c !== '️').map(c => c.codePointAt(0).toString(16)).join('-');
+const EMI = {};
+// the drawing for an emoji as an Image (for canvases); cb runs once it has loaded
+function emImg(e, cb) {
+  const k = emKey(e); if (!EMK.has(k)) return null;
+  let im = EMI[k];
+  if (!im) { im = EMI[k] = new Image(); im.src = `assets/em/${k}.webp`; }
+  if (cb && !im.naturalWidth) im.addEventListener('load', cb, { once: true });
+  return im;
+}
+// draw a label that is just one emoji as its drawing; false when there is none (the caller writes the text)
+function emDraw(ctx, s, x, y, size) {
+  const im = EMK.has(emKey(s)) && emImg(s); if (!im || !im.naturalWidth) return false;
+  const k = size / Math.max(im.naturalWidth, im.naturalHeight);
+  ctx.drawImage(im, x - im.naturalWidth * k / 2, y - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true;
+}
+function emText(node) {
+  const t = node.nodeValue, p = node.parentNode;
+  if (!p || !t || t.length > 4000) return;
+  EM_RE.lastIndex = 0; if (!EM_RE.test(t)) return;
+  const frag = document.createDocumentFragment(); let at = 0, hit = false;
+  t.replace(EM_RE, (e, i) => {
+    const k = emKey(e); if (!EMK.has(k)) return e;
+    hit = true; if (i > at) frag.append(t.slice(at, i));
+    const im = document.createElement('img');
+    im.className = 'emo'; im.alt = e; im.draggable = false; im.src = `assets/em/${k}.webp`;
+    im.onerror = () => { EMK.delete(k); im.replaceWith(e); };
+    frag.append(im); at = i + e.length; return e;
+  });
+  if (!hit) return;
+  if (at < t.length) frag.append(t.slice(at));
+  p.replaceChild(frag, node);
+}
+function emFix(node) {
+  if (node.nodeType === 3) return emText(node);
+  if (node.nodeType !== 1) return;
+  const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(emText);
+}
+try {
+  new MutationObserver(ms => ms.forEach(m => { if (m.type === 'characterData') emText(m.target); else m.addedNodes.forEach(emFix); }))
+    .observe(document.getElementById('app'), { childList: true, subtree: true, characterData: true });
+} catch (e) {}
+
 /* ---------- sound ---------- */
 let ac;
 function tone(f, at, d, type, v) {
@@ -408,6 +460,90 @@ function holdSnd(name, vol, loop) {
   }, 450);
   return true;
 }
+/* ---------- music ----------
+   A small tune played by the browser's own synthesiser, so it needs no files. Three moods: the map,
+   the mini-games (faster, with a soft beat) and the school (slower, no beat). It goes quiet while the
+   voice speaks and stops when the page is hidden. */
+const MUS = { out: null, t: 0, step: 0, mood: 'map', vol: 0 };
+const PENTA = [0, 2, 4, 7, 9];
+const CHORDS = [[0, 4, 7], [9, 0, 4], [5, 9, 0], [7, 11, 2]]; // C, Am, F, G
+const TUNES = {
+  map: { bpm: 100, key: 0, beat: 0.5, bars: [
+    [2, null, 4, null, 3, 2, 1, null], [0, 1, 2, null, 3, null, 2, null], [2, null, 4, null, 3, 2, 1, null], [1, 2, 1, 0, 0, null, null, null],
+    [4, null, 5, 4, 3, null, 2, null], [0, 1, 2, null, 3, null, 4, null], [5, null, 4, 3, 2, null, 1, null], [2, 1, 0, null, 0, null, null, null]] },
+  game: { bpm: 132, key: 2, beat: 1, bars: [
+    [0, 2, 4, 2, 5, 4, 2, null], [3, 2, 0, 2, 3, null, 3, null], [0, 2, 4, 2, 5, 4, 2, null], [4, 3, 2, 1, 0, null, 0, null],
+    [5, null, 5, 4, 5, 7, 5, null], [4, 3, 2, 3, 4, null, 2, null], [5, null, 5, 4, 5, 7, 5, null], [4, 3, 2, 1, 0, null, null, null]] },
+  calm: { bpm: 78, key: -3, beat: 0, bars: [
+    [2, null, null, 3, 4, null, null, null], [3, null, 2, null, 0, null, null, null], [2, null, null, 3, 4, null, 5, null], [4, null, 3, null, 2, null, null, null],
+    [0, null, 2, null, 4, null, null, 3], [2, null, null, null, 1, null, 0, null], [0, null, 2, null, 4, null, 5, null], [4, null, 2, null, 0, null, null, null]] },
+};
+const hz = semi => 261.63 * Math.pow(2, semi / 12);
+function mNote(f, at, d, v, type) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(v, at + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, at + d);
+  o.connect(g); g.connect(MUS.out); o.start(at); o.stop(at + d + 0.05);
+}
+function mHat(at, v) {
+  if (!MUS.noise) {
+    const b = ac.createBuffer(1, 2205, 44100), ch = b.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    MUS.noise = b;
+  }
+  const s = ac.createBufferSource(), g = ac.createGain(), f = ac.createBiquadFilter();
+  f.type = 'highpass'; f.frequency.value = 6000; s.buffer = MUS.noise; g.gain.value = v;
+  s.connect(f); f.connect(g); g.connect(MUS.out); s.start(at);
+}
+function mKick(at, v) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.setValueAtTime(140, at); o.frequency.exponentialRampToValueAtTime(48, at + 0.12);
+  g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+  o.connect(g); g.connect(MUS.out); o.start(at); o.stop(at + 0.2);
+}
+function musicStep(at) {
+  const tn = TUNES[MUS.mood], s = MUS.step % 64, bar = s >> 3, i = s & 7, ch = CHORDS[bar % 4], k = tn.key;
+  const deg = tn.bars[bar][i];
+  if (deg != null) { // the tune: a soft mallet (a note with a quick bright overtone)
+    const f = hz(k + 12 + PENTA[deg % 5] + 12 * Math.floor(deg / 5));
+    mNote(f, at, 0.5, 0.16); mNote(f * 4, at, 0.09, 0.035);
+  }
+  if (i === 0 || i === 4 || (i === 6 && tn.beat)) mNote(hz(k + ch[i === 6 ? 2 : 0] - 24), at, 0.45, 0.2, 'triangle'); // bass
+  if (i === 2 || i === 6) ch.forEach(n => mNote(hz(k + n - (n > 7 ? 12 : 0)), at, 0.32, 0.035, 'triangle')); // chord
+  if (tn.beat) {
+    if (i % 2) mHat(at, 0.035 * tn.beat);
+    if (tn.beat === 1 && (i === 0 || i === 4)) mKick(at, 0.22);
+  }
+}
+const GAME_VIEWS = ['snake', 'run', 'catch', 'whack', 'memory', 'fly', 'blocks', 'kart'];
+function musicTick() {
+  const want = S.sound && S.music !== false && ac && ac.state === 'running' && !document.hidden;
+  if (!want) { if (MUS.out && MUS.vol) { MUS.vol = 0; MUS.out.gain.setTargetAtTime(0, ac.currentTime, 0.1); } MUS.t = 0; return; }
+  if (!MUS.out) { MUS.out = ac.createGain(); MUS.out.gain.value = 0; MUS.out.connect(ac.destination); }
+  const mood = GAME_VIEWS.includes(view) ? 'game' : view === 'school' || view === 'lesson' || (cur && cur.school) ? 'calm' : 'map';
+  if (mood !== MUS.mood) { MUS.mood = mood; MUS.step = 0; MUS.t = 0; }
+  const vol = VOICE.busy ? 0.22 : 0.6;
+  if (vol !== MUS.vol) { MUS.vol = vol; MUS.out.gain.setTargetAtTime(vol, ac.currentTime, 0.25); }
+  const dur = 30 / TUNES[mood].bpm, now = ac.currentTime;
+  if (MUS.t < now) MUS.t = now + 0.08;
+  while (MUS.t < now + 0.35) { musicStep(MUS.t); MUS.t += dur; MUS.step++; }
+}
+setInterval(musicTick, 120);
+// the browser only lets sound start after a touch: wake the synthesiser on the first one
+document.addEventListener('pointerdown', () => {
+  if (!S.sound) return;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
+}, true);
+
+/* ---------- confetti ---------- */
+function confetti() {
+  const box = document.createElement('div'); box.className = 'confetti';
+  const cols = ['#ffc93c', '#ff6b6b', '#19a999', '#7c5cff', '#4aa8ff', '#ff8fd0'];
+  let h = '';
+  for (let i = 0; i < 46; i++) h += `<i style="left:${Math.random() * 100}%;background:${cols[i % cols.length]};--dx:${(Math.random() * 2 - 1) * 90}px;--r:${Math.random() * 900 - 450}deg;animation-delay:${Math.random() * 0.5}s;animation-duration:${1.6 + Math.random() * 1.2}s;${i % 3 ? '' : 'border-radius:50%;'}"></i>`;
+  box.innerHTML = h; document.body.appendChild(box); setTimeout(() => box.remove(), 3600);
+}
+
 // phone vibration (a number of milliseconds or an on/off pattern); silently does nothing where unsupported
 let vibeMsg = '';
 function buzz(pattern) {
@@ -717,14 +853,30 @@ const langSeg = () => seg('lang', LANGS.map(l => [l, LNAME[l]]));
 const ageSeg = () => seg('age', [[0, '5–6'], [1, '7–9'], [2, '10–12']].map(([v, l]) => [v, `${l} ${T('years')}`]));
 
 function show(v) {
+  const moved = v !== view;
   cur = null; view = v; resetArmed = false;
   hush();
-  ({ title: vTitle, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart, school: vSchool })[v]();
+  if (moved) { app.classList.remove('vin'); void app.offsetWidth; app.classList.add('vin'); }
+  ({ title: vTitle, splash: vSplash, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart, school: vSchool })[v]();
 }
 // the Android back button: leave a game or page for the map; false lets the app close
-window.__back = () => { if (view === 'map' || view === 'title') return false; show(view === 'lesson' ? 'school' : 'map'); return true; };
+window.__back = () => { if (view === 'map' || view === 'title' || view === 'splash') return false; show(view === 'lesson' ? 'school' : 'map'); return true; };
+// twinkling stars and a shooting star for the night screens
+const nightSky = () => {
+  let h = '';
+  for (let i = 0; i < 16; i++) h += `<i style="left:${(i * 37 + 11) % 96}%;top:${(i * 53 + 7) % 62}%;font-size:${10 + (i * 7) % 14}px;animation-delay:${(i * 0.37) % 2.4}s"></i>`;
+  return `<div class="sky">${h}<b></b><b class="s2"></b></div>`;
+};
+// the screen every visit starts on: logo, the cat and one big button
+function vSplash() {
+  app.innerHTML = `<div class="splash nightbg">${nightSky()}
+    <h1 class="logo">ElGatoLoco<small>${T('sub')}</small></h1>
+    <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button>
+    <button class="btn play" data-act="go" data-v="map">${T('play')} ▶</button>
+  </div>`;
+}
 function vTitle() {
-  app.innerHTML = `<div class="title">
+  app.innerHTML = `<div class="title nightbg">${nightSky()}
     <button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button>
     <h1>ElGatoLoco<small>${T('sub')}</small></h1>
     <p class="story">${T('story')}</p>
@@ -772,6 +924,7 @@ function vSettings() {
       <div class="field"><span class="label">${T('age')}</span>${ageSeg()}</div>
       <div class="field"><span class="label">${T('learn')}</span>${seg('learn', [['both', T('both')], ['es', 'Español'], ['en', 'English']])}</div>
       <div class="field"><span class="label">${T('sound')}</span>${seg('sound', [[true, T('on')], [false, T('off')]])}</div>
+      <div class="field"><span class="label">${T('music')}</span>${seg('music', [[true, T('on')], [false, T('off')]])}</div>
       <div class="field"><span class="label">${T('vibe')}</span>${seg('vibe', [[true, T('on')], [false, T('off')]])}</div>
       <button class="btn alt small" data-act="vtest">📳 ${T('vtest')}</button>${vibeMsg ? `<p class="label vmsg">${T(vibeMsg)}</p>` : ''}
       <p class="note">${T('privacy')}</p>
@@ -1030,9 +1183,19 @@ function puzzle() {
   gr.addColorStop(0, c1); gr.addColorStop(1, c2); x.fillStyle = gr; x.fillRect(0, 0, c.width, c.height);
   x.textAlign = 'center'; x.textBaseline = 'middle';
   const dec = ['⭐', '🌸', '☁️', '✨', '🎈', '🍀', '💜', '🌙', '🎵', '🐾', '🦋', '🌈'];
-  x.font = '34px sans-serif';
-  for (let i = 0; i < n; i++) { const cc = i % cols, r = Math.floor(i / cols); x.fillText(dec[i % dec.length], cc * 120 + (cc % 2 ? 92 : 28), r * 120 + (r % 2 ? 28 : 92)); }
-  x.font = `${Math.min(c.height, c.width) * 0.66}px sans-serif`; x.fillText(w[0], c.width / 2, c.height / 2 + 8);
+  const tok = cur;
+  const again = () => { if (cur === tok && cur.pz && $('.pz')) { paint(); $('.pz').style.setProperty('--img', `url(${c.toDataURL('image/png')})`); } };
+  const put = (e, cx, cy, size) => {
+    const im = emImg(e, again);
+    if (im && im.naturalWidth) { const k = size / Math.max(im.naturalWidth, im.naturalHeight); x.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); }
+    else if (!im) { x.font = `${size * 0.85}px sans-serif`; x.fillText(e, cx, cy); }
+  };
+  const paint = () => {
+    x.fillStyle = gr; x.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < n; i++) { const cc = i % cols, r = Math.floor(i / cols); put(dec[i % dec.length], cc * 120 + (cc % 2 ? 92 : 28), r * 120 + (r % 2 ? 28 : 92), 38); }
+    put(w[0], c.width / 2, c.height / 2, Math.min(c.height, c.width) * 0.78);
+  };
+  paint();
   let order; do { order = shuffle([...Array(n).keys()]); } while (order.filter((v, i) => v === i).length > n / 3);
   cur.pz = { order, cols, rows, sel: -1, w, lang };
   $('.level').classList.add('arcade');
@@ -1081,7 +1244,7 @@ function arcade(kind) {
     const gr = ctx.createLinearGradient(0, y, 0, y + t.h); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#e9edff');
     ctx.save(); ctx.shadowColor = 'rgba(29,43,83,.28)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4; ctx.fillStyle = gr; ctx.fill(); ctx.restore();
     ctx.lineWidth = 5; ctx.strokeStyle = ring; ctx.stroke();
-    ctx.fillStyle = '#1d2b53'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 ${t.fs}px ${FONT}`; ctx.fillText(t.label, t.x, t.y + t.fs * 0.07);
+    ctx.fillStyle = '#1d2b53'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `800 ${t.fs}px ${FONT}`; if (!emDraw(ctx, t.label, t.x, t.y, t.fs * 1.3)) ctx.fillText(t.label, t.x, t.y + t.fs * 0.07);
   };
   const RING = ['#ff6b6b', '#3d8bfd', '#2fbf71', '#f5a524'];
   function newQ() {
@@ -1259,7 +1422,7 @@ function finish() {
   const isNew = !S.stickers.includes(key);
   S.stars[key] = Math.max(S.stars[key] || 0, stars);
   if (isNew) S.stickers.push(key);
-  save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
+  save(); sfx('win'); confetti(); setTimeout(() => sfx('meow'), 950);
   const canNext = idx + 1 < PER_WORLD;
   cur = null; view = 'done';
   app.innerHTML = `<div class="done">
@@ -1328,7 +1491,7 @@ function vSnake() {
     const r = gameEnd('snake', score), o = app.querySelector('#sn-over');
     if (r.rec) app.querySelector('#sn-best').textContent = '🏆 ' + score;
     o.innerHTML = overHTML('snake', '🐟', score, r);
-    o.hidden = false; if (r.rec || r.won || r.dailyWon) sfx('win');
+    o.hidden = false; if (r.rec || r.won || r.dailyWon) { sfx('win'); confetti(); }
   }
   function step() {
     while (queue.length) { const d = queue.shift(); if (d.x !== -dir.x || d.y !== -dir.y) { dir = d; break; } }
@@ -1368,7 +1531,7 @@ function vSnake() {
       ctx.lineWidth = 4; ctx.strokeStyle = ['#ff6b6b', '#3d8bfd', '#f5a524'][i % 3]; ctx.stroke();
       let fs = cell * 0.5; ctx.font = `800 ${fs}px ${FONT}`;
       while (ctx.measureText(t.label).width > cell * 0.72 && fs > 9) { fs -= 1; ctx.font = `800 ${fs}px ${FONT}`; }
-      ctx.fillStyle = '#1d2b53'; ctx.fillText(t.label, px(t.x), py(t.y) + fs * 0.06);
+      ctx.fillStyle = '#1d2b53'; if (!emDraw(ctx, t.label, px(t.x), py(t.y), cell * 0.62)) ctx.fillText(t.label, px(t.x), py(t.y) + fs * 0.06);
     });
     // the cat: tail first, head last; each piece slides from its old square to the new one
     const at = i => {
@@ -1483,7 +1646,7 @@ function shell(id, unit, hint) {
   cv.width = g.W * dpr; cv.height = g.H * dpr;
   g.live = () => view === id && cv.isConnected;
   g.add = n => { g.score = Math.max(0, g.score + n); app.querySelector('#g-score').textContent = unit + ' ' + g.score; };
-  g.info = s => { const e = app.querySelector('#g-info'); if (e.textContent !== s) e.textContent = s; };
+  g.info = s => { const e = app.querySelector('#g-info'); if (e._s !== s) { e._s = s; e.textContent = s; } };
   g.pop = (x, y, t) => g.pops.push({ x, y, t, life: 0.8 });
   g.drawPops = dt => {
     g.pops = g.pops.filter(p => (p.life -= dt) > 0);
@@ -1500,7 +1663,7 @@ function shell(id, unit, hint) {
       const r = gameEnd(id, g.score);
       if (r.rec) app.querySelector('#g-best').textContent = '🏆 ' + g.score;
       o.innerHTML = overHTML(id, unit, g.score, r); o.hidden = false;
-      if (r.rec || r.won || r.dailyWon) sfx('win');
+      if (r.rec || r.won || r.dailyWon) { sfx('win'); confetti(); }
     };
     if (!q) return fin();
     g.revived = true;
@@ -2180,7 +2343,7 @@ function lessonDone() {
   const i = cur.i, tr = cur.tr, m = S.school[tr], list = TRACKS[tr].list, stars = cur.tries === 0 ? 3 : cur.tries === 1 ? 2 : 1;
   m[i] = Math.max(m[i] || 0, stars);
   for (let k = 0; k < m.length; k++) m[k] = m[k] || 0;
-  S.school.tab = tr; save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
+  S.school.tab = tr; save(); sfx('win'); confetti(); setTimeout(() => sfx('meow'), 950);
   cur = null; view = 'done';
   app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('cheer')}</button><h2>${T('sc_pass')}</h2>
     <div class="stars3">${[1, 2, 3].map(k => `<span class="${k <= stars ? 'on' : ''}">★</span>`).join('')}</div><p class="label">${list[i].n[li()]}</p>
@@ -2256,7 +2419,7 @@ const ACT = {
       S.byAge[S.age] = { stars: S.stars, stickers: S.stickers };
       const p = S.byAge[+d.v] || {}; S.stars = p.stars || {}; S.stickers = p.stickers || [];
     }
-    S[d.k] = d.k === 'age' ? +d.v : d.k === 'sound' || d.k === 'vibe' ? d.v === 'true' : d.v;
+    S[d.k] = d.k === 'age' ? +d.v : d.k === 'sound' || d.k === 'vibe' || d.k === 'music' ? d.v === 'true' : d.v;
     if (d.k === 'vibe' && S.vibe) buzz(60);
     if (d.k === 'lang' && !S.setup) S.learn = S.lang === 'es' ? 'en' : S.lang === 'en' ? 'es' : 'both';
     save(); sfx('tap'); show(view);
@@ -2344,6 +2507,6 @@ app.addEventListener('click', e => {
   if (b && !b.disabled) ACT[b.dataset.act](b.dataset, b);
 });
 
-window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk(), LESSONS, RLESSONS, TRACKS };
-show(S.setup ? 'map' : 'title');
+window.__chispa = { MUS, EMK, state: S, cur: () => cur, G, plan, walk: () => walk(), LESSONS, RLESSONS, TRACKS };
+show(S.setup ? 'splash' : 'title');
 })();

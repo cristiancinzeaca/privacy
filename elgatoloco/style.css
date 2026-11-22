@@ -537,3 +537,54 @@ p { margin: 0; }
 .abacus.em .bead { display: grid; place-items: center; background: none; box-shadow: none; border: 0; font-style: normal; font-size: 1.45rem; line-height: 1; }
 .abacus.em.r10 .bead { font-size: 1.05rem; }
 .abacus.em .bead.x { opacity: .28; filter: grayscale(1); }
+
+
+/* ---------- drawings in place of emoji ---------- */
+.emo { height: 1.22em; width: 1.22em; object-fit: contain; vertical-align: -0.24em; pointer-events: none; -webkit-user-drag: none; }
+
+/* ---------- menu backdrop, screen change, confetti ---------- */
+body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repeat; }
+.vin > * { animation: viewin .32s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes viewin { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+.confetti i { position: absolute; top: -14px; width: 10px; height: 14px; border-radius: 3px; animation: confall 2.2s cubic-bezier(.3, .6, .6, 1) both; }
+@keyframes confall { from { transform: translate(0, 0) rotate(0); opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), 105vh) rotate(var(--r)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .vin > * { animation: none; } .confetti { display: none; } }
+
+
+/* ---------- night screens: start-up and first set-up ---------- */
+.nightbg::before { content: ''; position: fixed; inset: 0; z-index: -1; background: #2a2466 url(assets/bg_title.webp) center bottom / cover no-repeat; }
+.vin > .nightbg { animation-name: fadein; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.sky i { position: absolute; color: #ffe9a3; font-style: normal; text-shadow: 0 0 8px #ffd75e; animation: twinkle 2.4s ease-in-out infinite; }
+.sky i::before { content: '✦'; }
+@keyframes twinkle { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.15); } }
+.sky b { position: absolute; left: -20%; top: 12%; width: 110px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, #fff6cf); transform: rotate(18deg); opacity: 0; animation: shoot 7s linear infinite 1.5s; }
+.sky b.s2 { top: 30%; animation-delay: 5s; animation-duration: 9s; }
+@keyframes shoot { 0% { transform: translate(0, 0) rotate(18deg); opacity: 0; } 3% { opacity: 1; } 16% { transform: translate(140vw, 46vw) rotate(18deg); opacity: 0; } 100% { transform: translate(140vw, 46vw) rotate(18deg); opacity: 0; } }
+.splash { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: max(34px, 7vh) 0 max(30px, 6vh); text-align: center; min-height: 0; }
+.logo { font-size: clamp(3rem, 15vw, 4.4rem); line-height: .95; color: #ffd75e; letter-spacing: -.02em; text-shadow: 0 3px 0 #c9861c, 0 6px 0 #8a5510, 0 10px 18px rgba(10, 6, 40, .6); animation: logoin .9s cubic-bezier(.2, 1.5, .4, 1) both; }
+.logo small { display: block; font-size: .36em; line-height: 1.2; letter-spacing: 0; margin-top: 12px; color: #fff; text-shadow: 0 2px 6px rgba(10, 6, 40, .8); }
+@keyframes logoin { from { transform: translateY(-40px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.splash .cat { width: min(62vw, 250px); height: min(62vw, 250px); margin-top: auto; animation: bob 1.2s ease-in-out infinite alternate; }
+.splash .play { width: min(78%, 300px); font-size: 1.7rem; padding-block: 16px; margin-top: 6px; animation: playpulse 1s ease-in-out infinite alternate; }
+@keyframes playpulse { to { transform: scale(1.06); } }
+.title.nightbg h1 { color: #ffd75e; text-shadow: 0 3px 0 #c9861c, 0 6px 14px rgba(10, 6, 40, .6); }
+.title.nightbg h1 small, .title.nightbg .story, .title.nightbg .label { color: #fff; text-shadow: 0 2px 6px rgba(10, 6, 40, .8); }
+
+/* ---------- level complete: turning rays and stars that land one by one ---------- */
+.done { position: relative; overflow-x: hidden; }
+.done::before { content: ''; position: absolute; left: 50%; top: 24%; width: 170vmin; height: 170vmin; margin: -85vmin 0 0 -85vmin; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 201, 60, .34) 0 10deg, rgba(255, 255, 255, 0) 10deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 8%, transparent 62%); mask: radial-gradient(circle, #000 8%, transparent 62%); animation: rays 26s linear infinite; }
+@keyframes rays { to { transform: rotate(360deg); } }
+.done .stars3 span { display: inline-block; animation: starland .55s cubic-bezier(.2, 1.7, .4, 1) both; }
+.done .stars3 span:nth-child(1) { animation-delay: .3s; }
+.done .stars3 span:nth-child(2) { animation-delay: .6s; }
+.done .stars3 span:nth-child(3) { animation-delay: .9s; }
+.done .stars3 span.on { filter: drop-shadow(0 0 10px rgba(255, 190, 40, .9)); }
+@keyframes starland { from { transform: scale(3) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.done h2 { animation: logoin .7s cubic-bezier(.2, 1.5, .4, 1) both; }
+@media (prefers-reduced-motion: reduce) { .done::before, .done .stars3 span, .done h2, .sky i, .sky b { animation: none; } }
+.stim .emo { height: 1.4em; width: 1.4em; vertical-align: -0.32em; }
