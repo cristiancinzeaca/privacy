@@ -35,6 +35,16 @@ const STR = {
   g_fly: ['Zbor printre nori', 'Vuelo entre nubes', 'Cloud flight'],
   g_blocks: ['Sparge cuburile', 'Rompe los cubos', 'Block pop'],
   g_kart: ['Cursa de carturi', 'Carrera de karts', 'Kart race'],
+  g_pop: ['Sparge baloanele', 'Explota los globos', 'Pop the balloons'], g_dots: ['Unește punctele', 'Une los puntos', 'Join the dots'],
+  popHint: ['Sparge baloanele care se potrivesc cu ce scrie sus', 'Explota los globos que coinciden con lo de arriba', 'Pop the balloons that match what is at the top'],
+  dotsHint: ['Atinge punctele în ordine: 1, 2, 3…', 'Toca los puntos en orden: 1, 2, 3…', 'Tap the dots in order: 1, 2, 3…'],
+  q_mice: ['Surprize prinse', 'Sorpresas atrapadas', 'Surprises caught'], ev_caught: ['Prins!', '¡Atrapado!', 'Caught!'],
+  sc_catHelp: ['Stai, te ajut eu!', '¡Espera, que te ayudo!', 'Wait, let me help!'], sc_catLook: ['Uită-te bine: răspunsul bun clipește.', 'Fíjate bien: la respuesta buena parpadea.', 'Look closely: the right answer is blinking.'],
+  cine_1: ['Într-o noapte, stelele au început să cadă din cer.', 'Una noche, las estrellas empezaron a caer del cielo.', 'One night, the stars began to fall from the sky.'],
+  cine_2: ['ElGatoLoco a găsit una și a pornit să le adune pe toate. Îl ajuți?', 'ElGatoLoco encontró una y salió a recogerlas todas. ¿Le ayudas?', 'ElGatoLoco found one and set off to collect them all. Will you help?'],
+  cine_w: ['Stelele se întorc pe cer. Bravo!', 'Las estrellas vuelven al cielo. ¡Bravo!', 'The stars go back to the sky. Well done!'],
+  cine_ch: ['Ai terminat un capitol întreg! Stelele se întorc pe cer.', '¡Has terminado un capítulo entero! Las estrellas vuelven al cielo.', 'You finished a whole chapter! The stars go back to the sky.'],
+  cine_skip: ['Sari peste', 'Saltar', 'Skip'], cine_again: ['Vezi povestea', 'Ver la historia', 'Watch the story'],
   blocksHint: ['Atinge două sau mai multe cuburi lipite, de aceeași culoare', 'Toca dos o más cubos juntos del mismo color', 'Tap two or more touching blocks of the same colour'],
   kartHint: ['Glisează stânga-dreapta. Depășește pisicile și ocolește conurile!', 'Desliza a izquierda y derecha. ¡Adelanta a los gatos y esquiva los conos!', 'Slide left and right. Overtake the cats and dodge the cones!'],
   feed: ['Pauză de gustare! Hrănește pisicul cu toți peștii', '¡Pausa de merienda! Dale al gato todos los peces', 'Snack break! Give the cat all the fish'],
@@ -556,7 +566,7 @@ function musicStep(at) {
     if (tn.beat === 1 && (i === 0 || i === 4)) mKick(at, 0.22);
   }
 }
-const GAME_VIEWS = ['snake', 'run', 'catch', 'whack', 'memory', 'fly', 'blocks', 'kart'];
+const GAME_VIEWS = ['snake', 'run', 'catch', 'whack', 'memory', 'fly', 'blocks', 'kart', 'pop', 'dots'];
 function musicTick() {
   const want = S.sound && S.music !== false && ac && ac.state === 'running' && !document.hidden;
   if (!want) { if (MUS.out && MUS.vol) { MUS.vol = 0; MUS.out.gain.setTargetAtTime(0, ac.currentTime, 0.1); } MUS.t = 0; return; }
@@ -575,6 +585,57 @@ document.addEventListener('pointerdown', () => {
   if (!S.sound) return;
   try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
 }, true);
+
+/* ---------- the story as short films (assets/cine/*.mp4, made with tools/clip.py) ---------- */
+let cineSt = null;
+function cine(clips, after) {
+  hush(); cur = null; view = 'cine';
+  cineSt = { clips, at: 0, after };
+  cinePaint();
+}
+function cinePaint() {
+  const st = cineSt, c = st.clips[st.at], tok = st.at;
+  app.innerHTML = `<div class="cine"><video src="assets/cine/${c[0]}.mp4" playsinline autoplay ${S.sound ? '' : 'muted'}></video>
+    <p class="cine-cap">${T(c[1])}</p><button class="btn alt small cine-skip" data-act="cskip">${T('cine_skip')} ▶</button></div>`;
+  const v = app.querySelector('video'), next = () => { if (view === 'cine' && cineSt === st && st.at === tok) cineNext(); };
+  v.volume = 0.7; v.onended = () => setTimeout(next, 500); v.onerror = next;
+  const p = v.play(); if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(next); });
+  say(T(c[1]), S.lang);
+}
+function cineNext() {
+  const st = cineSt; if (!st) return;
+  if (++st.at < st.clips.length) return cinePaint();
+  cineSt = null; hush(); st.after();
+}
+const INTRO = [['a', 'cine_1'], ['b', 'cine_2']];
+const WINS = ['w', 'w2', 'w3'];
+
+/* ---------- surprise: now and then a mouse dashes across the screen and the cat runs after it ---------- */
+let mouseAt = Date.now() + 40000;
+function mouseRun(kind) {
+  if (document.hidden || !S.setup || ['title', 'splash', 'cine'].includes(view) || document.querySelector('.chase')) return;
+  kind = kind || pick(['mouse', 'mouse', 'fly', 'star']);
+  const box = document.createElement('div'), rtl = Math.random() < 0.5, mouse = kind === 'mouse';
+  box.className = `chase k-${kind}${rtl ? ' rtl' : ''}`; box.style.top = (kind === 'star' ? 6 + Math.random() * 20 : 16 + Math.random() * 56) + '%';
+  box.innerHTML = `<button class="ch-mouse" aria-label="!">${mouse ? pic('ev_mouse') : `<img src="assets/em/${kind === 'fly' ? '1f98b' : '2b50'}.webp" alt="" draggable="false">`}</button>${mouse ? `<span class="ch-cat">${cat('walk')}</span>` : ''}`;
+  document.body.appendChild(box);
+  const m = box.firstChild, c = mouse ? box.lastChild : null; let done = false;
+  const bye = setTimeout(() => box.remove(), 7000);
+  m.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); if (done) return; done = true; clearTimeout(bye);
+    // it freezes where it was tapped; the cat catches up with the mouse
+    const mr = m.getBoundingClientRect(), mx = rtl ? innerWidth - mr.right : mr.left, my = mr.top - box.getBoundingClientRect().top;
+    const cx = c ? (rtl ? innerWidth - c.getBoundingClientRect().right : c.getBoundingClientRect().left) : 0;
+    m.style.animation = 'none'; m.style.left = '0'; m.style.transform = `translate(${mx}px, ${my}px)`;
+    if (c) { c.style.animation = 'none'; c.style.left = '0'; c.style.transform = `translateX(${cx}px)`; void c.offsetWidth; c.style.transition = 'transform .4s cubic-bezier(.3, 1.4, .5, 1)'; c.style.transform = `translateX(${mx - 46}px)`; }
+    box.classList.add('caught'); sfx(mouse ? 'meow' : 'good'); buzz([30, 40, 60]); stat().mice++; save();
+    const b = document.createElement('b'); b.className = 'ch-pop'; b.textContent = `${T('ev_caught')} ${mouse ? '🐭' : kind === 'fly' ? '🦋' : '⭐'} ${stat().mice}`; b.style.left = Math.max(4, Math.min(innerWidth - 170, mx - 30)) + 'px'; b.style.top = (my - 64) + 'px'; box.appendChild(b);
+    if (mouse) setTimeout(() => sfx('good'), 350);
+    setTimeout(() => box.remove(), 1900);
+  });
+}
+window.__chispa_ev = mouseRun; // for automated tests
+setInterval(() => { if (!document.hidden && Date.now() > mouseAt) { mouseAt = Date.now() + 50000 + Math.random() * 70000; mouseRun(); } }, 2500);
 
 /* ---------- confetti ---------- */
 function confetti() {
@@ -898,10 +959,11 @@ function show(v) {
   cur = null; view = v; resetArmed = false;
   hush();
   if (moved) { app.classList.remove('vin'); void app.offsetWidth; app.classList.add('vin'); }
-  ({ title: vTitle, splash: vSplash, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart, school: vSchool })[v]();
+  ({ title: vTitle, splash: vSplash, map: vMap, album: vAlbum, settings: vSettings, snake: vSnake, quests: vQuests, run: vRun, catch: vCatch, whack: vWhack, memory: vMemory, fly: vFly, blocks: vBlocks, kart: vKart, school: vSchool, pop: vPop, dots: vDots })[v]();
 }
 // the Android back button: leave a game or page for the map; false lets the app close
-window.__back = () => { if (view === 'map' || view === 'title' || view === 'splash') return false; show(view === 'lesson' ? 'school' : 'map'); return true; };
+window.__back = () => { if (view === 'cine') { cineNext(); return true; }
+  if (view === 'map' || view === 'title' || view === 'splash') return false; show(view === 'lesson' ? 'school' : 'map'); return true; };
 // twinkling stars and a shooting star for the night screens
 const nightSky = () => {
   let h = '';
@@ -968,6 +1030,7 @@ function vSettings() {
       <div class="field"><span class="label">${T('music')}</span>${seg('music', [[true, T('on')], [false, T('off')]])}</div>
       <div class="field"><span class="label">${T('vibe')}</span>${seg('vibe', [[true, T('on')], [false, T('off')]])}</div>
       <button class="btn alt small" data-act="vtest">📳 ${T('vtest')}</button>${vibeMsg ? `<p class="label vmsg">${T(vibeMsg)}</p>` : ''}
+      <button class="btn alt small" data-act="story">🎬 ${T('cine_again')}</button>
       <p class="note">${T('privacy')}</p>
       <div><button class="btn ${resetArmed ? 'danger' : 'alt'}" data-act="reset">${resetArmed ? T('resetSure') : T('reset')}</button></div>
     </div></div>`;
@@ -1457,10 +1520,11 @@ function arcade(kind) {
   later(450, newQ);
 }
 
-function finish() {
+function finish(seen) {
   const { world, idx, mistakes, w } = cur, key = world + '-' + idx;
   const stars = mistakes <= 2 ? 3 : mistakes <= 5 ? 2 : 1;
   const isNew = !S.stickers.includes(key);
+  if (isNew && idx + 1 === PER_WORLD && !seen) { const keep = cur; return cine([[pick(WINS), 'cine_w']], () => { cur = keep; finish(true); }); }
   S.stars[key] = Math.max(S.stars[key] || 0, stars);
   if (isNew) S.stickers.push(key);
   save(); sfx('win'); confetti(); setTimeout(() => sfx('meow'), 950);
@@ -1627,11 +1691,11 @@ document.addEventListener('keydown', e => {
 
 /* ---------- free play: more mini-games, challenges and trophies ---------- */
 // [view id, icon, score unit]
-const GAMES = [['snake', 'cat_head', '🐟'], ['run', 'ic_run', '⭐'], ['catch', 'ic_catch', '🐟'], ['whack', 'ic_whack', '🐭'], ['memory', 'ic_memory', '🃏'], ['fly', 'ic_fly', '⭐'], ['blocks', 'ic_blocks', '🧊'], ['kart', 'ic_kart', '🏁']];
+const GAMES = [['snake', 'cat_head', '🐟'], ['run', 'ic_run', '⭐'], ['catch', 'ic_catch', '🐟'], ['whack', 'ic_whack', '🐭'], ['memory', 'ic_memory', '🃏'], ['fly', 'ic_fly', '⭐'], ['blocks', 'ic_blocks', '🧊'], ['kart', 'ic_kart', '🏁'], ['pop', 'ic_pop', '🎈'], ['dots', 'ic_dots', '⭐']];
 // [id, bronze, silver, gold]: a game id counts its best score, the others count something collected over time
-const QUESTS = [['snake', 10, 25, 50], ['run', 12, 30, 60], ['catch', 20, 45, 90], ['whack', 15, 28, 40], ['memory', 6, 12, 20], ['fly', 8, 20, 40], ['blocks', 70, 110, 160], ['kart', 12, 30, 60],
-  ['plays', 5, 25, 75], ['stars', 15, 45, 90], ['stickers', 5, 15, 30], ['smart', 3, 10, 25], ['daily', 1, 5, 15]];
-const stat = () => (S.stat = S.stat || { plays: 0, smart: 0, daily: 0 });
+const QUESTS = [['snake', 10, 25, 50], ['run', 12, 30, 60], ['catch', 20, 45, 90], ['whack', 15, 28, 40], ['memory', 6, 12, 20], ['fly', 8, 20, 40], ['blocks', 70, 110, 160], ['kart', 12, 30, 60], ['pop', 12, 25, 45], ['dots', 3, 6, 10],
+  ['plays', 5, 25, 75], ['stars', 15, 45, 90], ['stickers', 5, 15, 30], ['smart', 3, 10, 25], ['daily', 1, 5, 15], ['mice', 3, 10, 25]];
+const stat = () => { S.stat = S.stat || { plays: 0, smart: 0, daily: 0 }; if (S.stat.mice == null) S.stat.mice = 0; return S.stat; };
 const questVal = id => (id === 'stars' ? totalStars() : id === 'stickers' ? S.stickers.length : id in stat() ? stat()[id] : S.best[id] || 0);
 const questTier = q => q.slice(1).filter(n => questVal(q[0]) >= n).length;
 const trophies = () => QUESTS.reduce((a, q) => a + questTier(q), 0);
@@ -1661,7 +1725,7 @@ function vQuests() {
   const dl = daily(), medals = ['🥉', '🥈', '🥇'];
   const rows = QUESTS.map(q => {
     const v = questVal(q[0]), tier = questTier(q), goal = q[Math.min(3, tier + 1)], g = GAMES.find(x => x[0] === q[0]);
-    return `<div class="qs-row"><span class="qs-ic">${g ? pic(g[1]) : { plays: '🎮', stars: '⭐', stickers: '📒', smart: '💡', daily: '🎯' }[q[0]]}</span>
+    return `<div class="qs-row"><span class="qs-ic">${g ? pic(g[1]) : { plays: '🎮', stars: '⭐', stickers: '📒', smart: '💡', daily: '🎯', mice: '🐭' }[q[0]]}</span>
       <div class="qs-tx"><b>${questName(q[0])}</b><div class="qs-bar"><i style="width:${Math.min(100, Math.round(v / goal * 100))}%"></i></div><small>${Math.min(v, goal)} / ${goal}</small></div>
       <span class="qs-med">${medals.map((m, i) => `<span class="${i < tier ? 'on' : ''}">${m}</span>`).join('')}</span></div>`;
   }).join('');
@@ -2477,9 +2541,10 @@ function vSchool() {
   const k = tabKey(), tr = TRACKS[k], st = S.school[k], base = tr.base[S.age];
   let last = -1; st.forEach((v, i) => { if (v) last = i; });
   const nextI = Math.max(base, last + 1);
+  let chN = -1;
   const rows = tr.list.map((L, i) => {
     const open = i <= base || st[i - 1] || st[i];
-    const head = L.ch ? `<h3 class="l-ch">${L.ch[li()]}</h3>` : '';
+    const head = L.ch ? `<h3 class="l-ch" style="background-image:linear-gradient(90deg, rgba(29, 43, 83, .78), rgba(29, 43, 83, .1)), url(assets/ch_${k}${++chN}.webp)">${L.ch[li()]}</h3>` : '';
     return head + (open ? `<button class="lesson${i === nextI ? ' next' : ''}" data-act="lesson" data-i="${i}"><b>${i + 1}</b><span>${L.n[li()]}</span>${starsStr(st[i] || 0)}</button>`
       : `<button class="lesson" disabled><b>🔒</b><span>${L.n[li()]}</span></button>`);
   }).join('');
@@ -2619,7 +2684,7 @@ function startLesson(i) {
   lessonStep();
 }
 function lessonFrame(inner) {
-  app.innerHTML = `<div class="page lesson-pg"><header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button></header>
+  app.innerHTML = `<div class="page lesson-pg"><header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2><button class="cat mini helpcat" data-act="chelp" aria-label="ElGatoLoco">${cat('sit')}<i>?</i></button></header>
     <div class="phases">${cur.stages.map((s, k) => `<span class="ph${k === cur.si ? ' on' : k < cur.si ? ' was' : ''}">${STG[s][1]}${k === cur.si ? ' ' + T(STG[s][0]) : ''}</span>`).join('')}</div>
     <div class="dots">${Array.from({ length: stageN() }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>
     <div class="panel show" id="panel">${inner}</div></div>`;
@@ -2750,7 +2815,30 @@ function lessonGood(wait) {
   if (cur.streak === 3 || cur.streak === 6) later(250, () => sfx('meow'));
   later(wait, lessonNext);
 }
-function lessonBad() { sfx('bad'); buzz([70, 50, 70]); cur.wrong++; cur.streak = 0; }
+// the cat steps in after two slips (or when it is tapped at the top of a lesson): sums are acted out again, and the right answer blinks
+function catHelp() {
+  const it = cur && cur.school && cur.it;
+  if (!it || cur.lock || $('.helpov') || ['demo', 'trace', 'count', 'beads'].includes(it.mode)) return;
+  if (!cur.wrong) cur.wrong = 1; // asked for help: no longer a first-try answer
+  it.hf = it.kind ? mathDemo(it) : [F('', 'sc_catLook')]; it.ha = 0;
+  const p = $('#panel'); p.insertAdjacentHTML('beforeend', '<div class="helpov"></div>');
+  sfx('meow'); say(T('sc_catHelp'), S.lang);
+  helpPaint();
+}
+function helpPaint() {
+  const it = cur.it, f = it.hf[it.ha], last = it.ha === it.hf.length - 1;
+  $('.helpov').innerHTML = `<b class="h-title">${T('sc_catHelp')}</b><div class="d-stage">${f.h}</div>
+    <div class="d-talk"><span class="d-cat">${cat('wave')}</span><p class="d-cap">${f.t}</p></div><button class="btn" data-act="hnext">${T(last ? 'sc_gotit' : 'sc_more')} ▶</button>`;
+  say(f.t, S.lang, true);
+}
+function helpEnd() {
+  const it = cur.it, ov = $('.helpov'); if (ov) ov.remove();
+  if (it.mode === 'choice') $('.opts').children[it.o.ans].classList.add('hint');
+  else if (it.mode === 'pad') $('#shint').textContent = '= ' + it.ans;
+  else if (it.mode === 'build') { const t = [...$('.tiles').children].find(x => !x.classList.contains('used') && x.dataset.t === it.parts[it.at]); if (t) t.classList.add('hint'); }
+  else if (it.mode === 'match') { const l = app.querySelector('.mbtn[data-s=l]:not(.ok)'); if (l) { l.classList.add('hint'); app.querySelector(`.mbtn[data-s=r][data-k="${l.dataset.k}"]`).classList.add('hint'); } }
+}
+function lessonBad() { sfx('bad'); buzz([70, 50, 70]); cur.wrong++; cur.streak = 0; if (cur.wrong === 2) later(600, catHelp); }
 function lessonNext() {
   cur.n++;
   if (cur.n < stageN()) return lessonStep();
@@ -2774,6 +2862,8 @@ function lessonNext() {
 }
 function lessonDone() {
   const i = cur.i, tr = cur.tr, m = S.school[tr], list = TRACKS[tr].list, stars = cur.tries === 0 ? 3 : cur.tries === 1 ? 2 : 1;
+  // the last lesson of a chapter, finished for the first time: the film of the stars going home, then the usual screen
+  if (!m[i] && !cur.filmed && (i + 1 === list.length || list[i + 1].ch)) { const keep = cur; keep.filmed = true; return cine([[pick(WINS), 'cine_ch']], () => { cur = keep; lessonDone(); }); }
   m[i] = Math.max(m[i] || 0, stars);
   for (let k = 0; k < m.length; k++) m[k] = m[k] || 0;
   S.school.tab = tr; save(); sfx('win'); confetti(); setTimeout(() => sfx('meow'), 950);
@@ -2794,6 +2884,8 @@ const SCHOOL_ACT = {
     if (it.at < it.frames.length - 1) { it.at++; return demoPaint(); }
     cur.lock = true; lessonNext();
   },
+  chelp() { catHelp(); },
+  hnext() { const it = cur && cur.school && cur.it; if (!it || !it.hf) return; sfx('tap'); if (it.ha < it.hf.length - 1) { it.ha++; return helpPaint(); } helpEnd(); },
   tclear() { const it = cur && cur.school && cur.it; if (it && it.mode === 'trace' && !cur.lock) { sfx('tap'); it.clear(); } },
   // counting by touch: each thing gets its number as it is tapped
   ctap(d, b) {
@@ -2872,6 +2964,112 @@ const SCHOOL_ACT = {
   },
 };
 
+/* ---------- balloons: pop the ones that match what is shown at the top (a number, a sum, a letter) ---------- */
+function vPop() {
+  const g = shell('pop', '🎈', T('popHint')), t = S.age, COL = ['#ff6b6b', '#ffb020', '#19a999', '#7c5cff', '#4aa8ff', '#ff7ac6'];
+  let left = 50, tg = null, hits = 0, round = 0, wait = 0.3;
+  g.cv.hidden = true;
+  g.dom.innerHTML = '<div class="pp-sky"></div><div class="pp-target"></div>';
+  const sky = g.dom.querySelector('.pp-sky'), top = g.dom.querySelector('.pp-target');
+  const target = () => {
+    const A = RLD[S.lang].flat();
+    if (round % 3 === 2) { const x = pick(A); tg = { show: x.l, ok: lcl(x.l), pool: A.map(y => lcl(y.l)) }; } // a capital letter: pop its small one
+    else if (t === 0) { const v = ri(1, 10); tg = { show: dotz(v), say: String(v), ok: String(v), pool: Array.from({ length: 10 }, (_, i) => String(i + 1)) }; }
+    else if (t === 1) { const a = ri(2, 9), b = ri(1, 9); tg = { show: `${a} + ${b}`, ok: String(a + b), pool: Array.from({ length: 17 }, (_, i) => String(i + 2)) }; }
+    else { const a = ri(2, 9), b = ri(2, 9); tg = { show: `${a} × ${b}`, ok: String(a * b), pool: [...new Set(Array.from({ length: 12 }, () => ri(2, 9) * ri(2, 9)))].map(String) }; }
+    round++; hits = 0;
+    sky.querySelectorAll('.pp-b').forEach(b => b.classList.add('gone'));
+    top.innerHTML = `<b>${tg.show}</b>`; top.classList.remove('in'); void top.offsetWidth; top.classList.add('in');
+    say(tg.say || tg.show, S.lang);
+  };
+  const spawn = () => {
+    const b = document.createElement('button'), v = Math.random() < 0.42 ? tg.ok : pick(tg.pool.filter(x => x !== tg.ok));
+    b.className = 'pp-b'; b.dataset.act = 'dom'; b.dataset.v = v; b.textContent = v;
+    b.style.cssText = `left:${4 + Math.random() * 74}%;--c:${pick(COL)};animation-duration:${(t === 0 ? 6.2 : 5.2) - Math.min(1.6, g.t / 30)}s`;
+    b.addEventListener('animationend', e => { if (e.animationName === 'pprise' || e.animationName === 'ppgone') b.remove(); });
+    sky.appendChild(b);
+  };
+  domHit = (d, b) => {
+    if (g.over || b.classList.contains('gone')) return;
+    if (d.v === tg.ok) {
+      g.add(1); hits++; b.classList.add('gone'); sfx('tap'); buzz(20); floatEm(sky, '+1', b.offsetLeft + 20, b.getBoundingClientRect().top - sky.getBoundingClientRect().top);
+      if (hits >= 3) { sfx('good'); target(); }
+    } else { left = Math.max(0, left - 3); sfx('bad'); buzz([70, 50, 70]); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); }
+  };
+  g.state = () => ({ tg, left });
+  target();
+  g.loop(dt => {
+    left -= dt; wait -= dt; g.info('⏱ ' + Math.max(0, Math.ceil(left)));
+    if (wait <= 0 && dt) { spawn(); wait = 0.62 - Math.min(0.22, g.t / 150); }
+    if (left <= 0) g.end(() => { left = 14; });
+  });
+}
+
+/* ---------- join the dots: tap the numbers in order around a hidden picture, then hear its name ---------- */
+function vDots() {
+  const g = shell('dots', '⭐', T('dotsHint')), t = S.age, N = [10, 16, 24][t], pool = V.filter(x => EMK.has(emKey(x[0])));
+  let left = 80, pts = [], at = 0, im = null, w = null, lang = 'es', shown = 0, flash = 0;
+  const size = () => Math.min(g.W, g.H - 70) * 0.84, px = p => (g.W - size()) / 2 + p[0] * size(), py = p => (g.H - 60 - size()) / 2 + p[1] * size();
+  const build = () => {
+    if (!g.live() || pts.length || !im.naturalWidth) return;
+    const R = 140, c = document.createElement('canvas'); c.width = c.height = R;
+    const x = c.getContext('2d'), k = (R - 30) / Math.max(im.naturalWidth, im.naturalHeight), iw = im.naturalWidth * k, ih = im.naturalHeight * k;
+    x.drawImage(im, (R - iw) / 2, (R - ih) / 2, iw, ih);
+    let A = null; try { A = x.getImageData(0, 0, R, R).data; } catch (e) {}
+    // a pixel counts as part of the picture if anything is drawn close to it, so thin gaps and strings do not break the outline
+    const raw = (a, b) => a >= 0 && b >= 0 && a < R && b < R && A[(b * R + a) * 4 + 3] > 100;
+    const solid = (a, b) => raw(a, b) || raw(a - 3, b) || raw(a + 3, b) || raw(a, b - 3) || raw(a, b + 3);
+    let line = [];
+    if (A) { // walk once round the outside edge of the picture, clockwise from its top
+      const D = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+      let sx = -1, sy = -1; for (let b = 0; b < R && sx < 0; b++) for (let a = 0; a < R; a++) if (solid(a, b)) { sx = a; sy = b; break; }
+      if (sx >= 0) {
+        let cx = sx, cy = sy, d = 0;
+        for (let step = 0; step < 6000; step++) {
+          line.push([cx, cy]);
+          let moved = false;
+          for (let q = 0; q < 8; q++) { const nd = (d + 5 + q) % 8; if (solid(cx + D[nd][0], cy + D[nd][1])) { cx += D[nd][0]; cy += D[nd][1]; d = nd; moved = true; break; } }
+          if (!moved || (cx === sx && cy === sy)) break;
+        }
+      }
+    }
+    if (line.length < N * 2) line = Array.from({ length: N * 4 }, (_, i) => [R / 2 + Math.cos(-Math.PI / 2 + i * Math.PI / (N * 2)) * R * 0.36, R / 2 + Math.sin(-Math.PI / 2 + i * Math.PI / (N * 2)) * R * 0.36]);
+    for (let i = 0; i < N; i++) { const q = line[Math.floor(i * line.length / N)]; pts.push([q[0] / R, q[1] / R]); }
+  };
+  const next = () => { w = pick(pool.filter(x => x !== w)); lang = learnLang(); at = 0; shown = 0; pts = []; im = emImg(w[0], build); build(); };
+  g.cv.addEventListener('pointerdown', e => {
+    e.preventDefault(); if (g.over || at >= N || !pts.length) return;
+    const r = g.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    let best = -1, bd = 46; pts.forEach((p, i) => { const d = Math.hypot(px(p) - x, py(p) - y); if (i >= at && d < bd) { bd = d; best = i; } });
+    if (best < 0) return;
+    if (best !== at) { left = Math.max(0, left - 2); flash = 0.3; sfx('bad'); buzz([70, 50, 70]); return; }
+    at++; sfx('tap'); buzz(15);
+    if (at === N) { g.add(1); left += 5; sfx('good'); say(wd(w, lang), lang); setTimeout(() => { if (g.live() && !g.over) next(); }, 2300); }
+  });
+  g.state = () => ({ pts: pts.map(p => [px(p), py(p)]), at, N });
+  next();
+  g.loop(dt => {
+    const ctx = g.ctx; left -= at === N ? 0 : dt; flash = Math.max(0, flash - dt); if (at === N) shown = Math.min(1, shown + dt * 1.6);
+    g.info('⏱ ' + Math.max(0, Math.ceil(left)));
+    const gr = ctx.createLinearGradient(0, 0, 0, g.H); gr.addColorStop(0, flash ? '#ffd9d9' : '#fff8e6'); gr.addColorStop(1, '#ffe9c2'); ctx.fillStyle = gr; ctx.fillRect(0, 0, g.W, g.H);
+    if (pts.length) {
+      if (shown && im.naturalWidth) { const s = size() * 110 / 140 * shown, k = s / Math.max(im.naturalWidth, im.naturalHeight); ctx.globalAlpha = shown; ctx.drawImage(im, g.W / 2 - im.naturalWidth * k / 2, (g.H - 60) / 2 - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); ctx.globalAlpha = 1; }
+      ctx.lineWidth = 6; ctx.lineJoin = ctx.lineCap = 'round'; ctx.strokeStyle = '#7c5cff'; ctx.globalAlpha = 1 - shown * 0.75; ctx.beginPath();
+      for (let i = 0; i < at; i++) (i ? ctx.lineTo(px(pts[i]), py(pts[i])) : ctx.moveTo(px(pts[i]), py(pts[i])));
+      if (at === N) ctx.closePath(); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      pts.forEach((p, i) => {
+        const done = i < at, nx = i === at, r = nx && t === 0 ? 17 + Math.sin(g.t * 6) * 2.5 : done ? 8 : 15;
+        ctx.beginPath(); ctx.arc(px(p), py(p), r, 0, 7); ctx.fillStyle = done ? '#2fbf71' : nx && t === 0 ? '#ffc93c' : '#fff'; ctx.fill();
+        if (!done) { ctx.lineWidth = 3; ctx.strokeStyle = '#1d2b53'; ctx.stroke(); ctx.fillStyle = '#1d2b53'; ctx.font = `800 ${r > 14 ? 16 : 13}px ${GFONT}`; ctx.fillText(String(i + 1), px(p), py(p) + 1); }
+      });
+      ctx.globalAlpha = 1;
+      if (at === N) { ctx.font = `800 34px ${GFONT}`; ctx.fillStyle = '#5a3fd6'; ctx.globalAlpha = shown; ctx.fillText(up(wd(w, lang)), g.W / 2, g.H - 38); ctx.globalAlpha = 1; }
+    }
+    if (left <= 0) g.end(() => { left = 20; });
+  });
+}
+
 /* ---------- input ---------- */
 const ACT = {
   set(d) {
@@ -2884,7 +3082,9 @@ const ACT = {
     if (d.k === 'lang' && !S.setup) S.learn = S.lang === 'es' ? 'en' : S.lang === 'en' ? 'es' : 'both';
     save(); sfx('tap'); show(view);
   },
-  start() { S.setup = true; save(); sfx('good'); show('map'); },
+  start() { S.setup = true; save(); sfx('good'); cine(INTRO, () => show('map')); },
+  cskip() { sfx('tap'); cineNext(); },
+  story() { sfx('tap'); cine(INTRO, () => show('settings')); },
   go(d) { sfx('tap'); show(d.v); },
   revive(d) { if (reviveCb) reviveCb(+d.i); },
   vtest() {

@@ -657,3 +657,63 @@ body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repe
 .dobs { font-size: 3rem; gap: 8px 10px; }
 .dgrp { font-size: 2.4rem; }
 .dobs.sm, .dgrp.sm { font-size: 1.5rem; }
+
+
+/* ---------- the story films ---------- */
+.cine { position: fixed; inset: 0; z-index: 30; background: #17123f; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 16px max(18px, 4vh); gap: 12px; }
+.cine video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cine-cap { position: relative; max-width: 30ch; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; line-height: 1.25; color: #fff; text-shadow: 0 2px 8px rgba(10, 6, 40, .95), 0 0 2px rgba(10, 6, 40, .9); background: rgba(23, 18, 63, .45); border-radius: 18px; padding: 10px 16px; animation: fadein 1s .6s both; }
+.cine-skip { position: relative; opacity: .85; }
+
+/* ---------- the mouse that dashes across the screen ---------- */
+.chase { position: fixed; left: 0; width: 100%; height: 0; z-index: 45; pointer-events: none; }
+.chase.rtl { transform: scaleX(-1); }
+.ch-mouse, .ch-cat { position: absolute; left: -130px; top: 0; }
+.ch-mouse { width: 78px; height: 78px; padding: 0; border: 0; background: none; pointer-events: auto; touch-action: none; animation: chrun 4.6s linear forwards; }
+.ch-mouse img { width: 100%; height: 100%; object-fit: contain; animation: chbob .22s ease-in-out infinite alternate; filter: drop-shadow(0 4px 4px rgba(20, 16, 50, .3)); }
+.ch-cat { width: 120px; height: 120px; top: -42px; animation: chrun 4.6s linear .7s forwards; }
+@keyframes chrun { to { transform: translateX(calc(100vw + 260px)); } }
+@keyframes chbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-7px) rotate(3deg); } }
+.chase.caught .ch-mouse img { animation: chdizzy .5s ease-in-out infinite alternate; }
+@keyframes chdizzy { from { transform: rotate(-14deg) scale(.95); } to { transform: rotate(14deg) scale(1.05); } }
+.chase.caught .ch-cat { animation: none; }
+.ch-pop { position: absolute; top: -64px; white-space: nowrap; font-family: var(--font-display); font-size: 1.5rem; color: #fff; background: var(--good); padding: 4px 14px; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .15); animation: pop .4s backwards, floatup 1.2s .7s forwards; }
+.chase.rtl .ch-pop { transform: scaleX(-1); }
+
+/* ---------- the cat helps ---------- */
+.helpcat { position: relative; }
+.helpcat i { position: absolute; right: -4px; top: -4px; width: 20px; height: 20px; border-radius: 50%; background: var(--sun); color: var(--ink); font: 800 .85rem/20px var(--font-display); font-style: normal; text-align: center; box-shadow: 0 2px 0 var(--sun-deep); }
+.panel { position: relative; }
+.helpov { position: absolute; inset: 0; z-index: 5; border-radius: inherit; background: #fffdf5; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; animation: pop .35s; }
+.helpov .h-title { font-family: var(--font-display); font-size: 1.3rem; color: var(--coral); }
+.helpov .btn { align-self: center; }
+.opt.hint, .mbtn.hint, .tile.hint { animation: hintblink .7s ease-in-out infinite alternate; }
+@keyframes hintblink { to { background: var(--sun); box-shadow: 0 5px 0 var(--sun-deep); } }
+
+/* ---------- balloons ---------- */
+.sn-wrap.g-pop { background: #bcd9ff url(assets/bg_home.webp) center bottom / cover no-repeat; }
+.g-pop .g-dom { padding: 0; display: block; }
+.pp-sky { position: absolute; inset: 0; overflow: hidden; }
+.pp-target { position: absolute; top: 10px; left: 50%; z-index: 3; transform: translateX(-50%); min-width: 110px; text-align: center; background: #fff; border-radius: 22px; padding: 4px 22px; box-shadow: 0 5px 0 var(--line), 0 0 0 4px var(--sun); font: 800 2.5rem/1.2 var(--font-display); color: var(--ink); }
+.pp-target.in { animation: pptarget .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes pptarget { from { transform: translateX(-50%) scale(.4); } }
+.pp-target .dotz { font-size: 1.15rem; max-width: 6.2em; color: var(--grape); vertical-align: middle; }
+.pp-b { position: absolute; bottom: -110px; width: 76px; height: 92px; padding: 0 0 6px; border: 0; border-radius: 50% 50% 47% 47% / 55% 55% 45% 45%; background: radial-gradient(circle at 30% 26%, rgba(255, 255, 255, .8) 0 9%, rgba(255, 255, 255, 0) 11%), var(--c); color: #fff; font: 800 1.9rem var(--font-display); text-shadow: 0 2px 0 rgba(0, 0, 0, .25); box-shadow: inset -6px -8px 0 rgba(0, 0, 0, .12); animation: pprise linear forwards; touch-action: manipulation; }
+.pp-b::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 34px; background: rgba(60, 50, 100, .45); }
+@keyframes pprise { to { transform: translateY(calc(-100cqh - 240px)); } }
+.pp-b.gone { animation: ppgone .28s ease-out forwards; pointer-events: none; }
+@keyframes ppgone { from { opacity: 1; } to { opacity: 0; scale: 1.7; } }
+.pp-b.no { filter: grayscale(.7); translate: 0 0; animation: pprise linear forwards, shake .35s; }
+
+/* ---------- join the dots ---------- */
+.sn-wrap.g-dots { background: #fff8e6; }
+
+.l-ch { margin: 16px 0 2px; padding: 26px 16px 12px; min-height: 84px; display: flex; align-items: flex-end; border-radius: 20px; color: #fff; font-size: 1.35rem; text-shadow: 0 2px 6px rgba(10, 6, 40, .8); background-color: var(--grape); background-size: cover; background-position: center; box-shadow: 0 5px 0 rgba(29, 43, 83, .18); }
+.chase.k-fly .ch-mouse { width: 66px; height: 66px; animation: chrun 7s linear forwards, chfly 1.1s ease-in-out infinite alternate; animation-composition: add; }
+.chase.k-fly .ch-mouse img { animation: chflap .16s ease-in-out infinite alternate; }
+@keyframes chfly { from { translate: 0 -34px; } to { translate: 0 34px; } }
+@keyframes chflap { from { transform: scaleX(1); } to { transform: scaleX(.55); } }
+.chase.k-star .ch-mouse { width: 64px; height: 64px; animation: chstar 3.4s linear forwards; }
+.chase.k-star .ch-mouse img { animation: rays 1.2s linear infinite; filter: drop-shadow(0 0 12px #ffd75e) drop-shadow(0 0 4px #fff); }
+@keyframes chstar { to { transform: translate(calc(100vw + 260px), 38vh); } }
+.chase.rtl .ch-pop { transform: scaleX(-1); }
