@@ -613,10 +613,10 @@ const WINS = ['w', 'w2', 'w3'];
 /* ---------- surprise: now and then a mouse dashes across the screen and the cat runs after it ---------- */
 let mouseAt = Date.now() + 40000;
 function mouseRun(kind) {
-  if (document.hidden || !S.setup || ['title', 'splash', 'cine'].includes(view) || document.querySelector('.chase')) return;
+  if (document.hidden || !S.setup || ['title', 'splash', 'cine'].includes(view) || document.querySelector('.runby')) return;
   kind = kind || pick(['mouse', 'mouse', 'fly', 'star']);
   const box = document.createElement('div'), rtl = Math.random() < 0.5, mouse = kind === 'mouse';
-  box.className = `chase k-${kind}${rtl ? ' rtl' : ''}`; box.style.top = (kind === 'star' ? 6 + Math.random() * 20 : 16 + Math.random() * 56) + '%';
+  box.className = `runby k-${kind}${rtl ? ' rtl' : ''}`; box.style.top = (kind === 'star' ? 6 + Math.random() * 20 : 16 + Math.random() * 56) + '%';
   box.innerHTML = `<button class="ch-mouse" aria-label="!">${mouse ? pic('ev_mouse') : `<img src="assets/em/${kind === 'fly' ? '1f98b' : '2b50'}.webp" alt="" draggable="false">`}</button>${mouse ? `<span class="ch-cat">${cat('walk')}</span>` : ''}`;
   document.body.appendChild(box);
   const m = box.firstChild, c = mouse ? box.lastChild : null; let done = false;

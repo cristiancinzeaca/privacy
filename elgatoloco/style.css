@@ -666,19 +666,19 @@ body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repe
 .cine-skip { position: relative; opacity: .85; }
 
 /* ---------- the mouse that dashes across the screen ---------- */
-.chase { position: fixed; left: 0; width: 100%; height: 0; z-index: 45; pointer-events: none; }
-.chase.rtl { transform: scaleX(-1); }
+.runby { position: fixed; left: 0; width: 100%; height: 0; z-index: 45; pointer-events: none; }
+.runby.rtl { transform: scaleX(-1); }
 .ch-mouse, .ch-cat { position: absolute; left: -130px; top: 0; }
 .ch-mouse { width: 78px; height: 78px; padding: 0; border: 0; background: none; pointer-events: auto; touch-action: none; animation: chrun 4.6s linear forwards; }
 .ch-mouse img { width: 100%; height: 100%; object-fit: contain; animation: chbob .22s ease-in-out infinite alternate; filter: drop-shadow(0 4px 4px rgba(20, 16, 50, .3)); }
 .ch-cat { width: 120px; height: 120px; top: -42px; animation: chrun 4.6s linear .7s forwards; }
 @keyframes chrun { to { transform: translateX(calc(100vw + 260px)); } }
 @keyframes chbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-7px) rotate(3deg); } }
-.chase.caught .ch-mouse img { animation: chdizzy .5s ease-in-out infinite alternate; }
+.runby.caught .ch-mouse img { animation: chdizzy .5s ease-in-out infinite alternate; }
 @keyframes chdizzy { from { transform: rotate(-14deg) scale(.95); } to { transform: rotate(14deg) scale(1.05); } }
-.chase.caught .ch-cat { animation: none; }
+.runby.caught .ch-cat { animation: none; }
 .ch-pop { position: absolute; top: -64px; white-space: nowrap; font-family: var(--font-display); font-size: 1.5rem; color: #fff; background: var(--good); padding: 4px 14px; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .15); animation: pop .4s backwards, floatup 1.2s .7s forwards; }
-.chase.rtl .ch-pop { transform: scaleX(-1); }
+.runby.rtl .ch-pop { transform: scaleX(-1); }
 
 /* ---------- the cat helps ---------- */
 .helpcat { position: relative; }
@@ -709,11 +709,11 @@ body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repe
 .sn-wrap.g-dots { background: #fff8e6; }
 
 .l-ch { margin: 16px 0 2px; padding: 26px 16px 12px; min-height: 84px; display: flex; align-items: flex-end; border-radius: 20px; color: #fff; font-size: 1.35rem; text-shadow: 0 2px 6px rgba(10, 6, 40, .8); background-color: var(--grape); background-size: cover; background-position: center; box-shadow: 0 5px 0 rgba(29, 43, 83, .18); }
-.chase.k-fly .ch-mouse { width: 66px; height: 66px; animation: chrun 7s linear forwards, chfly 1.1s ease-in-out infinite alternate; animation-composition: add; }
-.chase.k-fly .ch-mouse img { animation: chflap .16s ease-in-out infinite alternate; }
+.runby.k-fly .ch-mouse { width: 66px; height: 66px; animation: chrun 7s linear forwards, chfly 1.1s ease-in-out infinite alternate; animation-composition: add; }
+.runby.k-fly .ch-mouse img { animation: chflap .16s ease-in-out infinite alternate; }
 @keyframes chfly { from { translate: 0 -34px; } to { translate: 0 34px; } }
 @keyframes chflap { from { transform: scaleX(1); } to { transform: scaleX(.55); } }
-.chase.k-star .ch-mouse { width: 64px; height: 64px; animation: chstar 3.4s linear forwards; }
-.chase.k-star .ch-mouse img { animation: rays 1.2s linear infinite; filter: drop-shadow(0 0 12px #ffd75e) drop-shadow(0 0 4px #fff); }
+.runby.k-star .ch-mouse { width: 64px; height: 64px; animation: chstar 3.4s linear forwards; }
+.runby.k-star .ch-mouse img { animation: rays 1.2s linear infinite; filter: drop-shadow(0 0 12px #ffd75e) drop-shadow(0 0 4px #fff); }
 @keyframes chstar { to { transform: translate(calc(100vw + 260px), 38vh); } }
-.chase.rtl .ch-pop { transform: scaleX(-1); }
+.runby.rtl .ch-pop { transform: scaleX(-1); }
