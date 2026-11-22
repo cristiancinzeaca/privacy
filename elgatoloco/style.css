@@ -596,3 +596,64 @@ body { background: var(--bg) url(assets/bg_home.webp) center top / cover no-repe
 .lesson-pg .sent.text { font-size: 1.22rem; line-height: 1.32; text-wrap: pretty; }
 .lesson-pg .claim { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; line-height: 1.2; color: var(--grape-deep); background: #f1edff; border: 2px dashed var(--grape); border-radius: 16px; padding: 8px 14px; }
 .opt.ltr.low { text-transform: none; }
+
+
+/* ---------- lessons: the cat explains, counting by touch, pairs, writing ---------- */
+.ph { padding: 4px 9px; white-space: nowrap; }
+.demo { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.d-stage { flex: 1; min-height: 0; width: 100%; display: flex; flex-wrap: wrap; align-items: center; align-content: center; justify-content: center; gap: 8px 14px; }
+.d-stage .big { font-size: 4.4rem; line-height: 1; }
+.d-stage .mid { font-size: 3rem; flex-basis: 100%; }
+.d-stage .abacus { margin: 0 auto; }
+.d-cap { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; line-height: 1.2; color: var(--grape-deep); background: #f1edff; border-radius: 18px; padding: 10px 16px; max-width: 30ch; text-wrap: balance; }
+.d-steps { display: flex; gap: 6px; }
+.d-steps i { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
+.d-steps i.on { background: var(--grape); }
+.dobs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; max-width: 320px; font-size: 2.3rem; line-height: 1; }
+.dobs.sm, .dgrp.sm { font-size: 1.35rem; gap: 3px 4px; }
+.dgrp { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 6px; font-size: 2rem; line-height: 1; padding: 4px 8px; border-radius: 14px; background: rgba(124, 92, 255, .08); }
+.dob { position: relative; display: inline-grid; place-items: center; min-width: 1.25em; min-height: 1.25em; animation: pop .4s backwards; }
+.dob.still { animation: none; }
+.dob.gone { animation: dgone .7s .3s forwards; }
+@keyframes dgone { to { opacity: .22; filter: grayscale(1); transform: translateY(8px) scale(.85); } }
+.dob.slot { border: 3px dashed var(--line); border-radius: 50%; animation: none; }
+.dob b { position: absolute; right: -4px; bottom: -6px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--grape); color: #fff; font: 800 .8rem/20px var(--font-display); animation: pop .4s backwards; animation-delay: inherit; }
+.d-expr { flex-basis: 100%; animation: pop .45s .25s backwards; }
+.d-expr .expr { font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; color: var(--good); }
+.d-big { flex-basis: 100%; display: flex; align-items: baseline; justify-content: center; gap: 18px; font-family: var(--font-display); font-weight: 800; font-size: 5.2rem; line-height: 1; color: var(--ink); }
+.d-big i { font-style: normal; animation: pop .45s backwards; }
+.d-big i + i { animation-delay: .35s; }
+.d-big i.lo { color: var(--coral); }
+.d-big em { font-style: normal; font-size: .5em; color: var(--ink-soft); align-self: center; }
+.d-big.join { color: var(--grape-deep); letter-spacing: .04em; animation: djoin .7s cubic-bezier(.2, 1.4, .4, 1) backwards; }
+.d-big.parts { font-size: 2.8rem; gap: 8px; }
+@keyframes djoin { from { letter-spacing: .6em; opacity: .2; } }
+.d-line { display: flex; gap: 10px; justify-content: center; }
+.d-line i { font-style: normal; width: 58px; height: 58px; border-radius: 16px; background: #fff; box-shadow: 0 4px 0 var(--line); display: grid; place-items: center; font: 800 2rem var(--font-display); animation: pop .4s backwards; }
+.d-line i.hl { background: var(--sun); box-shadow: 0 4px 0 var(--sun-deep); }
+.d-sent { flex-basis: 100%; font-family: var(--font-display); font-weight: 800; font-size: 1.7rem; line-height: 1.3; text-wrap: balance; }
+.d-sent i { font-style: normal; animation: dword .9s backwards; }
+@keyframes dword { 0% { opacity: .25; } 40% { color: var(--coral); opacity: 1; transform: scale(1.12); } 100% { opacity: 1; } }
+.d-sent .hl { color: var(--coral); font-size: 1.25em; }
+.lesson-pg .count.big { font-size: 2.6rem; min-width: 1.4em; text-align: center; }
+.cbox { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-items: center; align-content: center; justify-content: center; gap: 10px 12px; padding: 6px; }
+.cobj { position: relative; width: 62px; height: 62px; border: 0; border-radius: 18px; background: #f4f1ff; box-shadow: 0 4px 0 var(--line); font-size: 2.1rem; line-height: 1; display: grid; place-items: center; padding: 0; }
+.cobj.on { background: #dff6e8; box-shadow: 0 4px 0 #9fd9b8; animation: pop .3s; }
+.cobj i { position: absolute; right: -5px; top: -7px; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px; background: var(--good); color: #fff; font: 800 .95rem/24px var(--font-display); font-style: normal; }
+.match { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; align-content: center; }
+.mcol { display: flex; flex-direction: column; gap: 12px; }
+.mbtn { min-height: 66px; border: 0; border-radius: 18px; background: #f4f1ff; box-shadow: 0 5px 0 var(--line); color: var(--ink); font: 800 1.7rem var(--font-display); padding: 6px 10px; display: grid; place-items: center; }
+.mbtn.sel { background: var(--sun); box-shadow: 0 5px 0 var(--sun-deep); }
+.mbtn.ok { background: #dff6e8; box-shadow: 0 5px 0 #9fd9b8; color: var(--teal-deep); }
+.mbtn.no { animation: shake .35s; background: #ffe1e1; }
+.mbtn .emo { height: 1.5em; width: 1.5em; }
+.dotz { display: inline-block; max-width: 5.3em; font-size: 1rem; line-height: 1.05; letter-spacing: .12em; color: var(--grape); overflow-wrap: anywhere; }
+.tracebox { flex: 1; min-height: 200px; display: grid; place-items: center; }
+.trace { border-radius: 24px; background: #fff; box-shadow: inset 0 0 0 3px var(--line); touch-action: none; }
+
+.d-talk { width: 100%; display: flex; align-items: flex-end; gap: 6px; }
+.d-cat { flex: none; width: 84px; height: 84px; }
+.d-talk .d-cap { flex: 1; max-width: none; text-align: left; position: relative; border-bottom-left-radius: 4px; }
+.dobs { font-size: 3rem; gap: 8px 10px; }
+.dgrp { font-size: 2.4rem; }
+.dobs.sm, .dgrp.sm { font-size: 1.5rem; }

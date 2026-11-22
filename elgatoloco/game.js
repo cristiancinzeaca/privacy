@@ -114,7 +114,8 @@ const STR = {
   q_count: ['Câte sunt?', '¿Cuántos hay?', 'How many are there?'],
   q_solve: ['Cât face?', '¿Cuánto es?', 'What is the answer?'],
   school: ['Școala pisicului', 'La escuela del gato', 'Cat school'], schoolSub: ['Calcule și citit, pas cu pas', 'Cálculo y lectura, paso a paso', 'Sums and reading, step by step'],
-  schoolNote: ['Lecțiile merg pe rând, ca la școală: fiecare adaugă un singur lucru nou. Descoperi, înțelegi, apoi exersezi, iar între pași te joci puțin cu pisicul.', 'Las lecciones van en orden, como en el cole: cada una añade una sola cosa nueva. Descubres, entiendes y luego practicas, y entre paso y paso juegas un poco con el gato.', 'The lessons go in order, like at school: each one adds a single new thing. You discover, understand, then practise, and between steps you play a little with the cat.'],
+  schoolNote: ['Lecțiile merg pe rând, ca la școală: fiecare adaugă un singur lucru nou. Întâi pisicul explică, apoi descoperi, înțelegi, scrii și exersezi. Între pași te joci puțin cu pisicul.', 'Las lecciones van en orden, como en el cole: cada una añade una sola cosa nueva. Primero el gato explica; luego descubres, entiendes, escribes y practicas. Entre paso y paso juegas un poco con el gato.', 'The lessons go in order, like at school: each one adds a single new thing. First the cat explains, then you discover, understand, write and practise. Between steps you play a little with the cat.'],
+  ph_ex: ['Pisicul explică', 'El gato explica', 'The cat explains'], ph_w: ['Scrie', 'Escribe', 'Write'],
   ph_0: ['Descoperă', 'Descubre', 'Discover'], ph_1: ['Înțelege', 'Entiende', 'Understand'], ph_2: ['Exersează', 'Practica', 'Practise'],
   sc_i_show: ['Arată numărul {0} cu bilele', 'Muestra el número {0} con las bolas', 'Show the number {0} with the beads'],
   sc_i_add: ['Mai adaugă {0} bile', 'Añade {0} bolas más', 'Add {0} more beads'], sc_i_sub: ['Ia {0} bile', 'Quita {0} bolas', 'Take away {0} beads'],
@@ -138,6 +139,43 @@ const STR = {
   sc_bigger: ['Care număr este mai mare?', '¿Qué número es mayor?', 'Which number is bigger?'], sc_smaller: ['Care număr este mai mic?', '¿Qué número es menor?', 'Which number is smaller?'],
   rd_small: ['Găsește aceeași literă, mică', 'Busca la misma letra en minúscula', 'Find the same letter, small'], rd_startsPic: ['Ce începe cu litera {0}?', '¿Qué empieza por la letra {0}?', 'Which one starts with {0}?'],
   rd_true: ['Citește. Este adevărat?', 'Lee. ¿Es verdad?', 'Read. Is it true?'],
+  sc_more: ['Mai departe', 'Siguiente', 'Next'], sc_gotit: ['Am înțeles', 'Entendido', 'Got it'],
+  sc_trace: ['Scrie cu degetul: {0}', 'Escribe con el dedo: {0}', 'Write with your finger: {0}'], sc_clear: ['Șterge', 'Borrar', 'Clear'],
+  sc_traceIn: ['Mai încet, pe forma desenată', 'Más despacio, por encima de la forma', 'Slower, on top of the shape'],
+  sc_tapCount: ['Atinge-le pe rând și numără', 'Tócalos uno a uno y cuenta', 'Tap them one by one and count'],
+  sc_story: ['Ascultă și rezolvă', 'Escucha y resuelve', 'Listen and solve'],
+  sc_match: ['Potrivește perechile', 'Une las parejas', 'Match the pairs'], sc_matchHint: ['Alege întâi din stânga', 'Elige primero a la izquierda', 'Pick one on the left first'],
+  dm_show1: ['Numărăm împreună: {0}.', 'Contamos juntos: {0}.', 'Let us count together: {0}.'],
+  dm_show2: ['Sunt {0}. Așa se scrie numărul {0}.', 'Hay {0}. Así se escribe el número {0}.', 'There are {0}. This is how we write the number {0}.'],
+  dm_ten: ['Un rând plin are 10 bile. Îi spunem o zece.', 'Una fila llena tiene 10 bolas. La llamamos una decena.', 'A full row has 10 beads. We call it a ten.'],
+  dm_tens: ['{0} rânduri pline și încă {1} bile fac numărul {2}.', '{0} filas llenas y {1} bolas más forman el número {2}.', '{0} full rows and {1} more beads make the number {2}.'],
+  dm_have: ['Aici sunt {0}.', 'Aquí hay {0}.', 'Here there are {0}.'], dm_more: ['Mai vin {0}.', 'Llegan {0} más.', '{0} more arrive.'],
+  dm_all: ['Le numărăm pe toate. Sunt {0}.', 'Las contamos todas. Hay {0}.', 'We count them all. There are {0}.'],
+  dm_plus: ['{0} plus {1} fac {2}.', '{0} más {1} son {2}.', '{0} plus {1} makes {2}.'],
+  dm_cross: ['Întâi umplem rândul până la 10, apoi punem restul dedesubt.', 'Primero llenamos la fila hasta 10 y el resto va debajo.', 'First we fill the row up to 10, then the rest goes below.'],
+  dm_take: ['Luăm {0}.', 'Quitamos {0}.', 'We take away {0}.'], dm_left: ['Au rămas {0}.', 'Quedan {0}.', '{0} are left.'],
+  dm_minus: ['{0} minus {1} fac {2}.', '{0} menos {1} son {2}.', '{0} minus {1} makes {2}.'],
+  dm_bond1: ['Aici sunt {0}. Vrem să fie {1}.', 'Aquí hay {0}. Queremos que haya {1}.', 'Here there are {0}. We want {1}.'],
+  dm_bond2: ['Mai trebuie {0}.', 'Faltan {0}.', 'We need {0} more.'],
+  dm_cmp1: ['Sus sunt {0}, iar jos sunt {1}.', 'Arriba hay {0} y abajo hay {1}.', 'There are {0} on top and {1} below.'],
+  dm_cmpB: ['Avem numerele {0} și {1}. Ne uităm întâi la zeci.', 'Tenemos los números {0} y {1}. Miramos primero las decenas.', 'We have the numbers {0} and {1}. We look at the tens first.'],
+  dm_cmp2: ['{0} este mai mare decât {1}. {1} este mai mic decât {0}.', '{0} es mayor que {1}. {1} es menor que {0}.', '{0} is bigger than {1}. {1} is smaller than {0}.'],
+  dm_seq1: ['Numerele stau la rând: {0}.', 'Los números van en fila: {0}.', 'The numbers go in order: {0}.'],
+  dm_seq2: ['După {0} vine {1}. Înainte de {0} este {2}.', 'Después del {0} va el {1}. Antes del {0} está el {2}.', 'After {0} comes {1}. Before {0} comes {2}.'],
+  dm_grp1: ['O grupă are {0}.', 'Un grupo tiene {0}.', 'One group has {0}.'],
+  dm_grp2: ['Facem {0} grupe la fel, de câte {1}.', 'Hacemos {0} grupos iguales de {1}.', 'We make {0} equal groups of {1}.'],
+  dm_times: ['{0} ori {1} fac {2}.', '{0} por {1} son {2}.', '{0} times {1} makes {2}.'],
+  dm_div1: ['Împărțim {0} în {1} rânduri egale.', 'Repartimos {0} en {1} filas iguales.', 'We share {0} into {1} equal rows.'],
+  dm_div2: ['În fiecare rând sunt {0}. {1} împărțit la {2} fac {0}.', 'En cada fila hay {0}. {1} entre {2} son {0}.', 'Each row has {0}. {1} divided by {2} makes {0}.'],
+  rd_dm_l1: ['Aceasta este litera {0}. Are o formă mare și una mică.', 'Esta es la letra {0}. Tiene una forma grande y una pequeña.', 'This is the letter {0}. It has a big shape and a small shape.'],
+  rd_dm_l2: ['{0} de la {1}.', '{0} de {1}.', '{0} is for {1}.'],
+  rd_dm_s1: ['Litera {0} și litera {1}.', 'La letra {0} y la letra {1}.', 'The letter {0} and the letter {1}.'],
+  rd_dm_s2: ['Împreună se citesc: {0}.', 'Juntas se leen: {0}.', 'Together they say: {0}.'],
+  rd_dm_w1: ['Citim pe bucăți: {0}.', 'Leemos por partes: {0}.', 'We read it in parts: {0}.'], rd_dm_w2: ['Împreună: {0}.', 'Todo junto: {0}.', 'All together: {0}.'],
+  rd_dm_p1: ['Citim cuvânt cu cuvânt.', 'Leemos palabra por palabra.', 'We read word by word.'],
+  rd_dm_p2: ['O propoziție începe cu literă mare și se termină cu punct.', 'Una frase empieza con mayúscula y termina con punto.', 'A sentence starts with a capital letter and ends with a full stop.'],
+  rd_dm_t1: ['Ascultă și urmărește textul.', 'Escucha y sigue el texto.', 'Listen and follow the text.'],
+  rd_dm_t2: ['Apoi citești tu și răspunzi la întrebări.', 'Luego lees tú y respondes a las preguntas.', 'Then you read it yourself and answer the questions.'],
   q_biggest: ['Care număr este cel mai mare?', '¿Cuál es el número más grande?', 'Which number is the biggest?'],
   q_next: ['Ce urmează?', '¿Qué sigue?', 'What comes next?'],
   q_odd: ['Care nu se potrivește?', '¿Cuál no encaja?', 'Which one does not belong?'],
@@ -168,7 +206,7 @@ const STR = {
 };
 const PRAISE = [['Bravo!', 'Super!', 'Grozav!', 'Excelent!'], ['¡Bravo!', '¡Genial!', '¡Muy bien!', '¡Súper!'], ['Great!', 'Awesome!', 'Well done!', 'Super!']];
 const li = () => LANGS.indexOf(S.lang);
-const T = (k, ...a) => { let s = (STR[k] || [k, k, k])[li()]; a.forEach((v, i) => { s = s.replace('{' + i + '}', v); }); return s; };
+const T = (k, ...a) => { let s = (STR[k] || [k, k, k])[li()]; a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); }); return s; };
 const LNAME = { ro: 'Română', es: 'Español', en: 'English' };
 
 /* ---------- content ---------- */
@@ -2073,13 +2111,13 @@ const mBond = (a, s) => ({ kind: 'bond', txt: `${a} + ? = ${s}`, ans: s - a, sta
 function mSeq(lo, hi) {
   const a = ri(lo, hi - 3), s = [a, a + 1, a + 2, a + 3], at = pick([3, 3, 0, 1, 2]), c = s[at];
   s[at] = '?';
-  return { mode: 'choice', kind: 'seq', txt: 'q' + at + '.' + a, q: T('q_missNum'), stim: expr(s.join(', ')), o: near(c, Math.max(0, lo - 1), hi + 1), cls: 'num', sy: [] };
+  return { mode: 'choice', kind: 'seq', a, txt: 'q' + at + '.' + a, q: T('q_missNum'), stim: expr(s.join(', ')), o: near(c, Math.max(0, lo - 1), hi + 1), cls: 'num', sy: [] };
 }
 // two numbers: which is bigger, which is smaller; small numbers come with a row of beads each until practice
 function mCmp(lo, hi, ph) {
   const a = ri(lo, hi); let b; do { b = ri(lo, hi); } while (b === a);
   const big = rnd(2), rod = (n, c) => `<div class="rod">${[...c.repeat(n).padEnd(10, '.')].map(x => `<i class="bead ${x === '.' ? 'off' : x}"></i>`).join('')}</div>`;
-  return { mode: 'choice', kind: 'cmp', txt: 'c' + big + '.' + a + '.' + b, q: T(big ? 'sc_bigger' : 'sc_smaller'), stim: '',
+  return { mode: 'choice', kind: 'cmp', a, b, txt: 'c' + big + '.' + a + '.' + b, q: T(big ? 'sc_bigger' : 'sc_smaller'), stim: '',
     help: hi <= 10 && ph < 2 ? `<div class="abacus r2">${rod(a, 'a')}${rod(b, 'b')}</div>` : '', helpOn: true,
     o: { opts: [String(a), String(b)], ans: (a > b) === !!big ? 0 : 1 }, cls: 'num', sy: [] };
 }
@@ -2172,7 +2210,9 @@ const LESSONS = [
   { n: ['Înmulțiri și împărțiri', 'Multiplicar y dividir', 'Multiplying and dividing'], g: any(() => sMul(ri(2, 9), ri(2, 9)), () => sDiv(ri(2, 10), ri(2, 9))) },
 ];
 // questions in the three steps of a lesson, and how many of the last step must be right first time
-const PH_N = [4, 5, 10], PH_IC = ['🔍', '💡', '⚡'], PASS = 8;
+const PASS = 8;
+// the number lessons end with writing the digits with a finger
+[[0, ['1', '2', '3']], [1, ['4', '5']], [4, ['6', '7']], [5, ['8', '9', '10']]].forEach(([i, w]) => { LESSONS[i].w = () => w; });
 
 /* reading: letters -> syllables -> words -> sentences, in the language of the menus.
    Letters come with a picture word; words are written in the pieces a child builds them from. */
@@ -2275,6 +2315,7 @@ for (const k of LANGS) {
   RTD[k] = RT[k].map(s => { const a = s.split('|'); return { t: a[0], qs: [{ q: a[1], a: a[2], x: a.slice(3, 5) }, { q: a[5], a: a[6], x: a.slice(7, 9) }], yes: a[9], no: a[10] }; });
 }
 const rChoice = (txt, q, stim, ok, others, cls, sy, col) => { const o = shuffle([ok, ...others]); return { mode: 'choice', txt, q, stim, o: { opts: o, ans: o.indexOf(ok) }, cls, sy: sy || [], col }; };
+const rMatch = (txt, pairs) => ({ mode: 'match', txt, q: T('sc_match'), pairs, order: shuffle(pairs.map((_, k) => k)), left: pairs.length, sel: null, sy: [] });
 const rTF = (txt, q, stim, yes) => ({ mode: 'choice', txt, q, stim, o: { opts: ['👍', '👎'], ans: yes ? 0 : 1 }, cls: 'em', sy: [] });
 const wordH = w => `<span class="word">${w}</span>`;
 const sentH = s => `<span class="sent">${s}</span>`;
@@ -2283,7 +2324,8 @@ function rLetter(spec, ph, n) {
   const D = RLD[S.lang], pool = spec.flatMap(([g, a, b]) => D[g].slice(a, b)), x = pick(pool), lc = s => s.toLocaleLowerCase('es');
   const known = D.slice(0, Math.max(...spec.map(s => s[0])) + 1).flat().filter(y => y.l !== x.l), oth = sample(known, 3), others = oth.map(y => y.l);
   if (ph === 0) return rChoice('l0' + x.l, T('rd_letter', x.l), `${big(x.e)}<span class="word"><b class="hl">${up(x.w[0])}</b>${up(x.w.slice(1))}</span>`, x.l, others, 'ltr', [x.l, x.w]);
-  const kind = ph === 1 ? ['same', 'small'][n % 2] : ['first', 'small', 'pic', 'same'][n % 4];
+  const kind = ph === 1 ? (n === 4 ? 'match' : ['same', 'small'][n % 2]) : n === 9 ? 'match' : ['first', 'small', 'pic', 'same'][n % 4];
+  if (kind === 'match') { const three = [x, ...oth.slice(0, 2)]; return rMatch('lm' + three.map(y => y.l).join(''), three.map(y => [y.l, lc(y.l)])); }
   if (kind === 'same') return rChoice('l1' + x.l, T('rd_same'), `<span class="word lc">${lc(x.l)}</span>`, x.l, others, 'ltr', [x.l]);
   if (kind === 'small') return rChoice('l3' + x.l, T('rd_small'), `<span class="word">${x.l}</span>`, lc(x.l), others.map(lc), 'ltr low', [x.l]);
   if (kind === 'pic') return rChoice('l4' + x.l, T('rd_startsPic', x.l), `<span class="word">${x.l}</span>`, x.e, oth.map(y => y.e), 'em', [x.l]);
@@ -2308,7 +2350,8 @@ function rSyl(ph, n, cons, part) {
 function rWord(lv, ph, n, half) {
   const all = RWD[S.lang][lv], mid = Math.ceil(all.length / 2), ws = half === 0 ? all.slice(0, mid) : half === 1 ? all.slice(mid) : all;
   const w = pick(ws), oth = k => sample(all.filter(x => x !== w), k);
-  const kind = ph === 0 ? 'build' : ph === 1 ? ['w2p', 'p2w'][n % 2] : ['p2w', 'buildx', 'w2p', 'tf'][n % 4];
+  const kind = ph === 0 ? 'build' : ph === 1 ? (n === 4 ? 'match' : ['w2p', 'p2w'][n % 2]) : n === 9 ? 'match' : ['p2w', 'buildx', 'w2p', 'tf'][n % 4];
+  if (kind === 'match') { const three = [w, ...oth(2)]; return rMatch('wm' + three.map(y => y.w).join(''), three.map(y => [up(y.w), y.e])); }
   if (kind === 'build' || kind === 'buildx') {
     const parts = (w.p.length > 1 ? w.p : [...w.w]).map(up);
     return { mode: 'build', txt: kind + w.w, q: T('rd_makeWord'), pic: big(w.e), parts, extra: [], model: kind === 'build' ? parts.join('·') : '', sy: [w.w] };
@@ -2344,18 +2387,18 @@ const lName = (pre, spec) => LANGS.map((k, i) => {
   return pre[i] + ' ' + (ls.length === 2 ? ls.join([' și ', ' y ', ' and '][i]) : ls.join(', '));
 });
 const LET = ['Literele', 'Las letras', 'The letters'], VOW = ['Vocalele', 'Las vocales', 'The vowels'], REV = ['Repetăm:', 'Repasamos:', 'Again:'];
-const rL = (pre, spec, ch) => ({ ch, n: lName(pre, spec), g: (p, n) => rLetter(spec, p, n) });
+const rL = (pre, spec, ch) => ({ ch, spec, n: lName(pre, spec), g: (p, n) => rLetter(spec, p, n) });
 const num = (name, k) => name.map(s => s + ' ' + k);
 const W0 = ['Cuvinte scurte', 'Palabras cortas', 'Short words'], W1 = ['Cuvinte din două silabe', 'Palabras de dos sílabas', 'Four-letter words'], W2 = ['Cuvinte lungi', 'Palabras largas', 'Long words'],
   W3 = ['Grupuri de litere', 'Letras dobles', 'Letter pairs'], S0 = ['Citim propoziții', 'Leemos frases', 'Reading sentences'], S1 = ['Cuvintele în ordine', 'Las palabras en orden', 'Words in order'],
   S2 = ['Înțeleg propoziția', 'Entiendo la frase', 'I understand the sentence'];
 const RLESSONS = [
   rL(VOW, [[0, 0, 3]], ['Literele', 'Las letras', 'The letters']), rL(VOW, [[0, 3, 5]]),
-  { n: ['Toate vocalele', 'Todas las vocales', 'All the vowels'], g: (p, n) => rLetter([[0, 0, 5]], p, n) },
+  { spec: [[0, 0, 5]], n: ['Toate vocalele', 'Todas las vocales', 'All the vowels'], g: (p, n) => rLetter([[0, 0, 5]], p, n) },
   rL(LET, [[1, 0, 2]]), rL(LET, [[1, 2, 4]]), rL(LET, [[1, 4, 6]]), rL(REV, [[1, 0, 6]]),
   rL(LET, [[2, 0, 2]]), rL(LET, [[2, 2, 4]]), rL(LET, [[2, 4, 6]]), rL(REV, [[2, 0, 6]]),
   rL(LET, [[3, 0, 2]]), rL(LET, [[3, 2, 4]]), rL(LET, [[3, 4, 6]]),
-  { n: ['Toate literele', 'Todas las letras', 'All the letters'], g: (p, n) => rLetter([[0, 0, 5], [1, 0, 6], [2, 0, 6], [3, 0, 6]], p, n) },
+  { spec: [[0, 0, 5], [1, 0, 6], [2, 0, 6], [3, 0, 6]], n: ['Toate literele', 'Todas las letras', 'All the letters'], g: (p, n) => rLetter([[0, 0, 5], [1, 0, 6], [2, 0, 6], [3, 0, 6]], p, n) },
 
   { ch: ['Silabele', 'Las sílabas', 'Two letters together'],
     n: ['Silabe cu M, N, L', 'Sílabas con M, N, L', 'Two-letter words 1'], g: (p, n) => rSyl(p, n, 'mnl', 0) },
@@ -2377,6 +2420,46 @@ const RLESSONS = [
   { n: ['Un text scurt', 'Un texto corto', 'A short text'], g: (p, n) => rText(0, p, n, 6, 12) },
   { n: ['Adevărat sau fals?', '¿Verdadero o falso?', 'True or false?'], g: (p, n) => rText(1, p, n, 0, 12) },
 ];
+
+/* ---- the cat explains: each lesson opens with one or two worked examples, shown a step at a time ---- */
+const F = (h, key, ...a) => ({ h, t: T(key, ...a) });
+const lcl = s => s.toLocaleLowerCase('es');
+const lPool = spec => spec.flatMap(([g, a, b]) => RLD[S.lang][g].slice(a, b));
+function dLetter(spec, n) {
+  const p = lPool(spec), x = p[n % p.length];
+  return [F(`<div class="d-big"><i>${x.l}</i><i class="lo">${lcl(x.l)}</i></div>`, 'rd_dm_l1', x.l),
+    F(`${big(x.e)}<span class="word"><b class="hl">${up(x.w[0])}</b>${up(x.w.slice(1))}</span>`, 'rd_dm_l2', x.l, x.w)];
+}
+function dSyl(part, n) {
+  const cons = ['mnl', 'rst', 'pdbvf', 'mnlrstpdbvf'][part], E2 = part > 2 ? EN2 : EN2.slice(part * 5, part * 5 + 6);
+  const s = S.lang === 'en' ? E2[n % E2.length] : cons[n % cons.length] + 'aeiou'[(n * 2 + part) % 5];
+  return [F(`<div class="d-big"><i>${up(s[0])}</i><em>+</em><i>${up(s[1])}</i></div>`, 'rd_dm_s1', up(s[0]), up(s[1])),
+    { ...F(`<div class="d-big join">${up(s)}</div>`, 'rd_dm_s2', up(s)), s: [T('rd_dm_s2', s)] }];
+}
+function dWord(lv, half, n) {
+  const all = RWD[S.lang][lv], mid = Math.ceil(all.length / 2), ws = half ? all.slice(mid) : all.slice(0, mid), w = ws[n % ws.length], parts = w.p.length > 1 ? w.p : [...w.w];
+  return [{ ...F(`${big(w.e)}<div class="d-big parts">${parts.map(up).join('<em>·</em>')}</div>`, 'rd_dm_w1', parts.map(up).join(' · ')), s: [T('rd_dm_w1', parts.join(', '))] },
+    { ...F(`${big(w.e)}<div class="d-big join">${up(w.w)}</div>`, 'rd_dm_w2', up(w.w)), s: [T('rd_dm_w2', w.w)] }];
+}
+function dSent(set, n) {
+  const i = set * 12 + n % 12, t = RSD[S.lang][i].t, pic = `<span class="mid">${SPIC[i]}</span>`;
+  return [{ ...F(`${pic}<div class="d-sent">${t.split(' ').map((w, k) => `<i style="animation-delay:${(k * 0.45).toFixed(2)}s">${w}</i>`).join(' ')}</div>`, 'rd_dm_p1'), s: [T('rd_dm_p1'), t] },
+    F(`${pic}<div class="d-sent"><b class="hl">${t[0]}</b>${t.slice(1, -1)}<b class="hl">${t.slice(-1)}</b></div>`, 'rd_dm_p2')];
+}
+function dText(from, to, n) {
+  const i = from + n % (to - from), t = RTD[S.lang][i].t, h = `<span class="mid">${TPIC[i]}</span><span class="sent text">${t}</span>`;
+  return [{ ...F(h, 'rd_dm_t1'), s: [T('rd_dm_t1'), t] }, F(h, 'rd_dm_t2')];
+}
+RLESSONS.forEach((L, i) => {
+  if (L.spec) {
+    const size = L.spec.reduce((s, [, a, b]) => s + b - a, 0);
+    L.d = n => dLetter(L.spec, n); L.dn = Math.min(3, size);
+    if (size <= 3) L.w = () => lPool(L.spec).flatMap(x => [x.l, lcl(x.l)]); // big and small, one after the other
+  } else if (i < 19) L.d = n => dSyl(i - 15, n);
+  else if (i < 27) L.d = n => dWord((i - 19) >> 1, (i - 19) & 1, n);
+  else if (i < 33) L.d = n => dSent(i < 30 ? 0 : 1, n);
+  else L.d = n => dText(i === 34 ? 6 : 0, i === 33 ? 6 : 12, n);
+});
 // the two paths: sums and reading; base = the lesson each age group starts on (everything before it is open too)
 const TRACKS = { m: { list: LESSONS, base: [0, 20, 43] }, r: { list: RLESSONS, base: [0, 19, 27] } };
 // progress saved on the earlier, shorter paths: an old lesson that was done counts for the new ones that cover it
@@ -2431,52 +2514,199 @@ function sOpts(c) {
   const o = shuffle([c, ...sample([c - 1, c + 1, c - 2, c + 2, c + 10, c - 10].filter(v => v >= 0), 3)]);
   return { opts: o.map(String), ans: o.indexOf(c) };
 }
-// a sum takes a different shape from one question to the next: beads to move, numbers to pick,
-// a keypad to type on, true or false, balloons to pop
-function mathFmt(it) {
-  const show = it.kind === 'show', bond = it.kind === 'bond';
+// the steps of a lesson: [name, picture, how many questions, which difficulty its questions are made for]
+const STG = { ex: ['ph_ex', '🐱', 2, 0], d: ['ph_0', '🔍', 4, 0], u: ['ph_1', '💡', 5, 1], w: ['ph_w', '✏️', 3, 1], p: ['ph_2', '⚡', 10, 2] };
+const stageId = () => cur.stages[cur.si];
+const stageN = () => cur.left || (stageId() === 'ex' ? cur.L.dn || 2 : stageId() === 'w' ? Math.min(6, cur.L.w().length) : STG[stageId()][2]);
+
+// a little story around a sum: who has how many of what
+const SOBJ = [['🍎', ['măr', 'mere', 'Câte'], ['manzana', 'manzanas', 'Cuántas'], ['apple', 'apples']], ['🎈', ['balon', 'baloane', 'Câte'], ['globo', 'globos', 'Cuántos'], ['balloon', 'balloons']],
+  ['🐟', ['pește', 'pești', 'Câți'], ['pez', 'peces', 'Cuántos'], ['fish', 'fish']], ['🌸', ['floare', 'flori', 'Câte'], ['flor', 'flores', 'Cuántas'], ['flower', 'flowers']],
+  ['⭐', ['stea', 'stele', 'Câte'], ['estrella', 'estrellas', 'Cuántas'], ['star', 'stars']], ['⚽', ['minge', 'mingi', 'Câte'], ['pelota', 'pelotas', 'Cuántas'], ['ball', 'balls']]];
+const SNAME = [['Ana', 'Ana', 'Anna'], ['Dan', 'Dani', 'Dan'], ['Ema', 'Ema', 'Emma'], ['Radu', 'Raúl', 'Sam']];
+function story(it) {
+  const o = pick(SOBJ), l = li(), nm = pick(SNAME)[l], w = o[l + 1], add = it.kind === 'add';
+  // Romanian puts "de" after numbers that end in 20 or more: 34 de mere
+  const cnt = n => n + (l === 0 && n > 19 && (n % 100 === 0 || n % 100 > 19) ? ' de ' : ' ') + (n === 1 ? w[0] : w[1]);
+  const t = l === 0 ? (add ? `${nm} are ${cnt(it.a)}. Mai primește ${it.b}. ${w[2]} ${w[1]} are acum?` : `${nm} are ${cnt(it.a)}. Dă ${it.b} unui prieten. ${w[2]} ${w[1]} îi rămân?`)
+    : l === 1 ? (add ? `${nm} tiene ${cnt(it.a)}. Le dan ${it.b} más. ¿${w[2]} ${w[1]} tiene ahora?` : `${nm} tiene ${cnt(it.a)}. Regala ${it.b}. ¿${w[2]} ${w[1]} le quedan?`)
+      : add ? `${nm} has ${cnt(it.a)}. ${nm} gets ${it.b} more. How many ${w[1]} does ${nm} have now?` : `${nm} has ${cnt(it.a)}. ${nm} gives ${it.b} away. How many ${w[1]} are left?`;
+  return { e: o[0], t };
+}
+const dotz = n => `<span class="dotz">${'●'.repeat(n)}</span>`;
+// three sums of the same kind to pair with their answers (numbers are paired with groups of dots)
+function mathMatch(it, L) {
+  const items = [it], show = it.kind === 'show';
+  for (let k = 0; k < 60 && items.length < 3; k++) { const x = L.g(cur.ph, k); if (!x.mode && x.kind === it.kind && !items.some(y => y.ans === x.ans || y.txt === x.txt)) items.push(x); }
+  if (items.length < 3 || (show && items.some(x => x.ans > 10))) return false;
+  Object.assign(it, rMatch('m' + items.map(x => x.txt).join('|'), items.map(x => [show ? dotz(x.ans) : x.txt, String(x.ans)])));
+  return true;
+}
+// a sum takes a different shape from one question to the next: beads to move, things to tap and count, numbers to pick,
+// a keypad to type on, a little story, true or false, balloons to pop, pairs to match
+function mathFmt(it, L) {
+  const show = it.kind === 'show', bond = it.kind === 'bond', sum = it.kind === 'add' || it.kind === 'sub';
   it.sy = [];
   if (cur.ph === 0) {
+    if (cur.n % 2 && (show || it.kind === 'add') && it.target <= 10) { it.mode = 'count'; it.q = T('sc_tapCount'); return; }
     it.mode = 'beads';
     it.q = T('sc_i_' + it.kind, bond ? it.target : it.kind === 'div' || it.kind === 'mul' || show ? it.a : it.b, it.b);
     return;
   }
-  const f = cur.ph === 1 ? 'choice' : ['choice', 'pad', 'tf', 'pop'][cur.n % 4];
-  it.q = f === 'pad' ? T(show ? 'q_count' : 'sc_type') : f === 'tf' ? T('sc_true') : f === 'pop' ? T('sc_pop') : show ? T('q_count') : bond ? T('q_missNum') : T('q_solve');
+  const kinds = sum ? ['choice', 'pad', 'story', 'tf', 'pop'] : ['choice', 'pad', 'tf', 'pop'];
+  let f = cur.ph === 1 ? (cur.n === 4 ? 'match' : 'choice') : cur.n === 9 ? 'match' : kinds[cur.n % kinds.length];
+  if (f === 'match') { if (mathMatch(it, L)) return; f = 'choice'; }
+  it.q = f === 'pad' ? T(show ? 'q_count' : 'sc_type') : f === 'tf' ? T('sc_true') : f === 'pop' ? T('sc_pop') : f === 'story' ? T('sc_story') : show ? T('q_count') : bond ? T('q_missNum') : T('q_solve');
   it.stim = show ? '' : expr(it.txt);
   it.help = beadPic(it, cur.ph === 1 && cur.n % 2 ? SKINS[cur.i % SKINS.length] : null);
   it.helpOn = cur.ph === 1 || show;
   if (f === 'pad') { it.mode = 'pad'; return; }
   it.mode = 'choice';
-  if (f === 'tf') {
+  if (f === 'story') {
+    const st = story(it);
+    it.stim = `<span class="mid">${st.e}</span><span class="brk"></span><span class="sent text">${st.t}</span>`; it.sy = [st.t]; it.helpOn = false;
+    it.o = sOpts(it.ans); it.cls = 'num';
+  } else if (f === 'tf') {
     const yes = rnd(2), v = yes ? it.ans : Math.abs(it.ans + pick([-1, 1, 2, it.ans > 2 ? -2 : 3]));
     it.stim = expr(show ? String(v) : bond ? `${it.a} + ${v} = ${it.target}` : `${it.txt} = ${v}`);
     it.o = { opts: ['👍', '👎'], ans: yes ? 0 : 1 }; it.cls = 'em';
   } else { it.o = sOpts(it.ans); it.cls = 'num'; it.pop = f === 'pop'; }
 }
+// the worked example for a sum, drawn with a few things when the numbers are small and with the beads when they are not
+function mathDemo(it) {
+  const e = SKINS[cur.i % SKINS.length], k = it.kind, a = it.a, b = it.b;
+  const ob = (n, c, num, from, cls) => Array.from({ length: n }, (_, i) => `<span class="dob ${cls || ''}" style="animation-delay:${(i * 0.16).toFixed(2)}s">${c}${num ? `<b>${(from || 0) + i + 1}</b>` : ''}</span>`).join('');
+  const box = (h, small) => `<div class="dobs${small ? ' sm' : ''}">${h}</div>`, ex = s => `<div class="d-expr">${expr(s)}</div>`, digit = n => `<div class="d-big"><i>${n}</i></div>`;
+  if (k === 'seq') {
+    const s = [a, a + 1, a + 2, a + 3], line = hl => `<div class="d-line">${s.map((v, i) => `<i class="${i === hl ? 'hl' : ''}" style="animation-delay:${(i * 0.3).toFixed(1)}s">${v}</i>`).join('')}</div>`;
+    return [F(line(-1), 'dm_seq1', s.join(', ')), F(line(1), 'dm_seq2', s[1], s[2], s[0])];
+  }
+  if (k === 'cmp') {
+    const hi = Math.max(a, b), lo = Math.min(a, b);
+    const h = hi <= 10 ? `<div class="dgrp">${ob(a, e[0])}</div><div class="dgrp">${ob(b, e[1])}</div>` : `<div class="d-big"><i>${a}</i><i>${b}</i></div>`;
+    return [F(h, hi <= 10 ? 'dm_cmp1' : 'dm_cmpB', a, b), F(h + ex(`${hi} > ${lo}`), 'dm_cmp2', hi, lo)];
+  }
+  if (k === 'show') {
+    const n = it.target;
+    if (n <= 12) return [F(box(ob(n, e[0], true)), 'dm_show1', Array.from({ length: n }, (_, i) => i + 1).join(', ')), F(digit(n) + box(ob(n, e[0], false, 0, 'still')), 'dm_show2', n)];
+    return [F(beadPic(sShow(10, 1)), 'dm_ten'), F(beadPic(it), 'dm_tens', Math.floor(n / 10), n % 10, n), F(digit(n) + beadPic(it), 'dm_show2', n)];
+  }
+  if (k === 'bond') return [F(box(ob(a, e[0]) + ob(b, '', false, 0, 'slot')), 'dm_bond1', a, it.target), F(box(ob(a, e[0], false, 0, 'still') + ob(b, e[1])), 'dm_bond2', b),
+    F(box(ob(a, e[0], false, 0, 'still') + ob(b, e[1], false, 0, 'still')) + ex(`${a} + ${b} = ${it.target}`), 'dm_plus', a, b, it.target)];
+  if (k === 'add') {
+    if (it.target <= 12) return [F(box(ob(a, e[0])), 'dm_have', a), F(box(ob(a, e[0], false, 0, 'still') + ob(b, e[1])), 'dm_more', b),
+      F(box(ob(a, e[0], true, 0, 'still') + ob(b, e[1], true, a, 'still')), 'dm_all', it.ans), F(box(ob(a, e[0], false, 0, 'still') + ob(b, e[1], false, 0, 'still')) + ex(`${it.txt} = ${it.ans}`), 'dm_plus', a, b, it.ans)];
+    const cross = a % 10 + b % 10 > 9 && b < 10;
+    return [F(beadPic(sShow(a, it.rows)), 'dm_have', a), F(beadPic(it), cross ? 'dm_cross' : 'dm_more', b), F(beadPic(it) + ex(`${it.txt} = ${it.ans}`), 'dm_plus', a, b, it.ans)];
+  }
+  if (k === 'sub') {
+    if (a <= 12) return [F(box(ob(a, e[0])), 'dm_have', a), F(box(ob(a - b, e[0], false, 0, 'still') + ob(b, e[0], false, 0, 'gone')), 'dm_take', b),
+      F(box(ob(a - b, e[0], true, 0, 'still')), 'dm_left', it.ans), F(box(ob(a - b, e[0], false, 0, 'still') + ob(b, e[0], false, 0, 'gone')) + ex(`${it.txt} = ${it.ans}`), 'dm_minus', a, b, it.ans)];
+    return [F(beadPic(sShow(a, it.rows)), 'dm_have', a), F(beadPic(it), 'dm_take', b), F(beadPic(it) + ex(`${it.txt} = ${it.ans}`), 'dm_minus', a, b, it.ans)];
+  }
+  // equal groups: a rows of b (multiplying) or b rows of the answer (dividing)
+  const rows = k === 'mul' ? a : b, per = k === 'mul' ? b : it.ans, tot = rows * per, small = tot <= 36;
+  const grp = (r, cls) => small ? Array.from({ length: r }, (_, i) => `<div class="dgrp sm">${ob(per, e[i % 2], false, 0, cls)}</div>`).join('') : beadPic(it);
+  if (k === 'mul') return [F(small ? grp(1) : beadPic(sShow(per, 1)), 'dm_grp1', per), F(grp(rows), 'dm_grp2', rows, per), F(grp(rows, 'still') + ex(`${it.txt} = ${it.ans}`), 'dm_times', rows, per, tot)];
+  return [F(small ? box(ob(tot, e[0]), true) : beadPic(sShow(tot, 10)), 'dm_have', tot), F(grp(rows), 'dm_div1', tot, rows), F(grp(rows, 'still') + ex(`${it.txt} = ${it.ans}`), 'dm_div2', per, tot, rows)];
+}
 
 function startLesson(i) {
   hush();
-  const tr = tabKey();
-  cur = { school: true, tr, i, L: TRACKS[tr].list[i], ph: 0, n: 0, ok: 0, tries: 0, left: PH_N[0], seen: new Set(), it: null, wrong: 0, lock: false, streak: 0, lastQ: '' };
+  const tr = tabKey(), L = TRACKS[tr].list[i];
+  cur = { school: true, tr, i, L, stages: ['ex', 'd', 'u', ...(L.w ? ['w'] : []), 'p'], si: 0, ph: 0, n: 0, ok: 0, tries: 0, left: 0, seen: new Set(), it: null, wrong: 0, lock: false, streak: 0, lastQ: '' };
   view = 'lesson';
   lessonStep();
 }
 function lessonFrame(inner) {
-  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
   app.innerHTML = `<div class="page lesson-pg"><header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button></header>
-    <div class="phases">${[0, 1, 2].map(p => `<span class="ph${p === cur.ph ? ' on' : p < cur.ph ? ' was' : ''}">${PH_IC[p]} ${T('ph_' + p)}</span>`).join('')}</div>
-    <div class="dots">${Array.from({ length: total }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="phases">${cur.stages.map((s, k) => `<span class="ph${k === cur.si ? ' on' : k < cur.si ? ' was' : ''}">${STG[s][1]}${k === cur.si ? ' ' + T(STG[s][0]) : ''}</span>`).join('')}</div>
+    <div class="dots">${Array.from({ length: stageN() }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>
     <div class="panel show" id="panel">${inner}</div></div>`;
 }
+function demoStep() {
+  const L = cur.L;
+  cur.it = { mode: 'demo', txt: 'demo', at: 0, frames: L.d ? L.d(cur.n) : mathDemo(L.g(0, cur.n)), sy: [] }; cur.wrong = 0; cur.lock = false;
+  demoPaint();
+}
+function demoPaint() {
+  const it = cur.it, f = it.frames[it.at], last = it.at === it.frames.length - 1;
+  lessonFrame(`<div class="demo"><div class="d-stage">${f.h}</div><div class="d-talk"><span class="d-cat">${cat('wave')}</span><p class="d-cap" data-act="say" data-lang="${S.lang}" data-text="${f.t.replace(/"/g, '')}">${f.t}</p></div>
+      <div class="d-steps">${it.frames.map((_, k) => `<i class="${k <= it.at ? 'on' : ''}"></i>`).join('')}</div></div>
+    <button class="btn" data-act="dnext">${T(last ? 'sc_gotit' : 'sc_more')} ▶</button>`);
+  (f.s || [f.t]).forEach((t, k) => say(t, S.lang, k > 0));
+}
+// writing with a finger: the digit or letter is drawn pale and the child goes over it
+function traceStep() {
+  const list = cur.L.w(), g = list[cur.n % list.length], q = T('sc_trace', g);
+  cur.it = { mode: 'trace', txt: 'w' + g, g, sy: [] }; cur.wrong = 0; cur.lock = false;
+  lessonFrame(`<p class="q" data-act="say" data-lang="${S.lang}" data-text="${q}">${q}</p><div class="tracebox"><canvas class="trace"></canvas></div><p class="hintline" id="shint"></p>
+    <button class="btn alt small" data-act="tclear">↺ ${T('sc_clear')}</button>`);
+  say(q, S.lang);
+  traceSetup($('.trace'), g);
+}
+function traceSetup(cv, g) {
+  const box = cv.parentNode, W = Math.max(160, Math.min(box.clientWidth, box.clientHeight || 300, 320)), dpr = Math.min(2, window.devicePixelRatio || 1), tok = cur, it = cur.it;
+  cv.style.width = cv.style.height = W + 'px'; cv.width = cv.height = W * dpr;
+  const ctx = cv.getContext('2d'), m = document.createElement('canvas'); m.width = m.height = W;
+  const mx = m.getContext('2d', { willReadFrequently: true });
+  // the shape fills most of the square, whatever the letter: tall, wide or with a tail below the line
+  let fs = W * 0.8; mx.font = `800 ${fs}px ${GFONT}`;
+  const m0 = mx.measureText(g), gw = (m0.actualBoundingBoxLeft + m0.actualBoundingBoxRight) || m0.width, gh = (m0.actualBoundingBoxAscent + m0.actualBoundingBoxDescent) || fs;
+  fs *= Math.min(W * 0.8 / gh, W * 0.82 / gw, 1.6);
+  const font = `800 ${fs}px ${GFONT}`;
+  mx.font = font; mx.textAlign = 'center'; mx.textBaseline = 'alphabetic';
+  const mt = mx.measureText(g), by = (W + mt.actualBoundingBoxAscent - mt.actualBoundingBoxDescent) / 2;
+  mx.fillText(g, W / 2, by);
+  const A = mx.getImageData(0, 0, W, W).data, inside = (x, y) => x >= 0 && y >= 0 && x < W && y < W && A[((y | 0) * W + (x | 0)) * 4 + 3] > 90;
+  const cells = []; for (let y = 5; y < W; y += 9) for (let x = 5; x < W; x += 9) if (inside(x, y)) cells.push({ x, y, hit: false });
+  let strokes = [], pts = 0, out = 0, down = false, last = null;
+  const paint = ok => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, W);
+    ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = ok ? '#bff0d2' : '#e7e3fb'; ctx.fillText(g, W / 2, by);
+    ctx.setLineDash([7, 6]); ctx.lineWidth = 2.5; ctx.strokeStyle = ok ? '#2fbf71' : '#7c5cff'; ctx.strokeText(g, W / 2, by); ctx.setLineDash([]);
+    ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(16, W * 0.075); ctx.strokeStyle = ok ? '#2fbf71' : '#ff6b6b';
+    strokes.forEach(s => { ctx.beginPath(); s.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); if (s.length === 1) ctx.lineTo(s[0][0] + 0.1, s[0][1]); ctx.stroke(); });
+  };
+  const mark = (x, y) => {
+    pts++; if (!(inside(x, y) || inside(x - 9, y) || inside(x + 9, y) || inside(x, y - 9) || inside(x, y + 9))) out++;
+    const r = W * 0.075; cells.forEach(c => { if (!c.hit && Math.abs(c.x - x) < r && Math.abs(c.y - y) < r) c.hit = true; });
+  };
+  const reset = () => { strokes = []; pts = out = 0; cells.forEach(c => { c.hit = false; }); paint(); };
+  const done = () => { if (cur !== tok || cur.lock) return; paint(true); say(g, S.lang); lessonGood(1100); };
+  const check = () => {
+    if (cells.filter(c => c.hit).length / Math.max(1, cells.length) < 0.8) return;
+    if (out / pts > 0.4) { lessonBad(); reset(); $('#shint').textContent = T('sc_traceIn'); return; } // scribbled all over instead of following the shape
+    done();
+  };
+  const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => {
+    if (cur !== tok || cur.lock) return; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    down = true; last = pos(e); strokes.push([last]); mark(last[0], last[1]); paint();
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!down || cur !== tok || cur.lock) return;
+    const p = pos(e), d = Math.hypot(p[0] - last[0], p[1] - last[1]); if (d < 3) return;
+    const n = Math.ceil(d / 6); for (let k = 1; k <= n; k++) mark(last[0] + (p[0] - last[0]) * k / n, last[1] + (p[1] - last[1]) * k / n);
+    strokes[strokes.length - 1].push(p); last = p; paint();
+  });
+  const lift = () => { if (!down) return; down = false; if (cur === tok && !cur.lock) check(); };
+  cv.addEventListener('pointerup', lift); cv.addEventListener('pointercancel', lift);
+  it.clear = reset; it.finish = done;
+  paint();
+}
 function lessonStep() {
+  const sid = stageId();
+  if (sid === 'ex') return demoStep();
+  if (sid === 'w') return traceStep();
   const list = TRACKS[cur.tr].list;
   let L = cur.L;
-  // practice mixes in two questions from earlier lessons so that old skills stay fresh
+  // practice mixes in two questions from the last few lessons so that old skills stay fresh
   if (cur.ph === 2 && cur.i > 0 && (cur.n === 3 || cur.n === 7)) L = list[Math.max(0, cur.i - 5) + rnd(Math.min(5, cur.i))];
   let it; for (let k = 0; k < 40; k++) { it = L.g(cur.ph, cur.n); if (!cur.seen.has(it.txt)) break; }
   cur.seen.add(it.txt); cur.it = it; cur.wrong = 0; cur.lock = false;
-  if (!it.mode) mathFmt(it);
+  if (!it.mode) mathFmt(it, L);
   const q = it.q, top = it.stim || '';
   let body;
   if (it.mode === 'beads') {
@@ -2484,6 +2714,14 @@ function lessonStep() {
     body = `<div class="stim s-top">${it.kind === 'show' ? '' : expr(it.txt)}<span class="count">🧮 <b id="tot">0</b></span></div>
       <div class="abacus live r${it.rows > 2 ? 10 : it.rows}"></div><p class="hintline" id="shint"></p>
       <button class="btn" data-act="scheck">✔ ${T('sc_ready')}</button>`;
+  } else if (it.mode === 'count') {
+    const e = SKINS[cur.i % SKINS.length], cells = it.kind === 'add' ? [...Array(it.a).fill(e[0]), ...Array(it.b).fill(e[1])] : Array(it.target).fill(e[0]);
+    it.at = 0; it.need = cells.length;
+    body = `<div class="stim s-top">${it.kind === 'add' ? expr(it.txt) : ''}<span class="count big"><b id="tot">0</b></span></div>
+      <div class="cbox">${cells.map(c => `<button class="cobj" data-act="ctap">${c}</button>`).join('')}</div>`;
+  } else if (it.mode === 'match') {
+    const btn = (k, s) => `<button class="mbtn" data-act="mpair" data-s="${s}" data-k="${k}">${it.pairs[k][s === 'l' ? 0 : 1]}</button>`;
+    body = `<div class="match"><div class="mcol">${it.pairs.map((_, k) => btn(k, 'l')).join('')}</div><div class="mcol">${it.order.map(k => btn(k, 'r')).join('')}</div></div><p class="hintline" id="shint"></p>`;
   } else if (it.mode === 'build') {
     it.at = 0;
     body = `<div class="stim s-top grow">${it.pic}${it.sy.length ? sayBtn(it.sy[0], S.lang) : ''}${it.model ? `<span class="brk"></span><span class="model">${it.model}</span>` : ''}</div>
@@ -2515,18 +2753,22 @@ function lessonGood(wait) {
 function lessonBad() { sfx('bad'); buzz([70, 50, 70]); cur.wrong++; cur.streak = 0; }
 function lessonNext() {
   cur.n++;
-  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
-  if (cur.n < total) return lessonStep();
-  if (cur.ph < 2) { // a stage is over: a short break with the cat, then the next stage
-    cur.ph++; cur.n = 0; cur.ok = 0; cur.left = PH_N[1]; cur.seen = new Set(); cur.lastQ = ''; sfx('clap');
-    const b = cur.ph === 1 ? pick(['pet', 'tickle']) : pick(['feed', 'bubbles', 'hide', 'chase']);
-    lessonFrame('');
+  if (cur.n < stageN()) return lessonStep();
+  const sid = stageId();
+  if (sid !== 'p') { // a step is over: on to the next one, with a short break with the cat after discovering and before practising
+    cur.si++;
+    if (cur.tries && stageId() === 'w') cur.si++; // a second try at practice does not repeat the writing
+    const nx = stageId();
+    cur.ph = STG[nx][3]; cur.n = 0; cur.ok = 0; cur.left = 0; cur.seen = new Set(); cur.lastQ = '';
+    const b = sid === 'd' ? pick(['pet', 'tickle']) : nx === 'p' ? pick(['feed', 'bubbles', 'hide', 'chase']) : '';
+    if (!b) return lessonStep();
+    sfx('clap'); lessonFrame('');
     return (BREAK_FN[b] || petBreak)(b);
   }
   if (cur.ok >= PASS) return lessonDone();
   // not there yet: look at the pictures twice more, then practise again
   const tok = cur; cur.tries++;
-  app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button><h2>${cur.ok} / ${PH_N[2]}</h2><p class="label">${T('sc_retry')}</p>
+  app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button><h2>${cur.ok} / ${STG.p[2]}</h2><p class="label">${T('sc_retry')}</p>
     <div class="row"><button class="btn" data-act="sretry">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="school">${T('school')}</button></div></div>`;
   cur = tok;
 }
@@ -2544,7 +2786,34 @@ function lessonDone() {
 const SCHOOL_ACT = {
   stab(d) { sfx('tap'); S.school.tab = d.k; save(); vSchool(); },
   lesson(d) { sfx('tap'); startLesson(+d.i); },
-  sretry() { if (!cur || !cur.school) return; sfx('tap'); cur.ph = 1; cur.n = 0; cur.ok = 0; cur.left = 2; cur.seen = new Set(); cur.lastQ = ''; lessonStep(); },
+  sretry() { if (!cur || !cur.school) return; sfx('tap'); cur.si = cur.stages.indexOf('u'); cur.ph = 1; cur.n = 0; cur.ok = 0; cur.left = 2; cur.seen = new Set(); cur.lastQ = ''; lessonStep(); },
+  // the cat's explanation: one step further
+  dnext() {
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'demo' || cur.lock) return;
+    sfx('tap');
+    if (it.at < it.frames.length - 1) { it.at++; return demoPaint(); }
+    cur.lock = true; lessonNext();
+  },
+  tclear() { const it = cur && cur.school && cur.it; if (it && it.mode === 'trace' && !cur.lock) { sfx('tap'); it.clear(); } },
+  // counting by touch: each thing gets its number as it is tapped
+  ctap(d, b) {
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'count' || cur.lock || b.classList.contains('on')) return;
+    it.at++; b.classList.add('on'); b.insertAdjacentHTML('beforeend', `<i>${it.at}</i>`); $('#tot').textContent = it.at;
+    sfx('tap'); say(String(it.at), S.lang);
+    if (it.at < it.need) return;
+    if (it.kind === 'add') $('.s-top').innerHTML = `<span class="expr good">${it.txt} = ${it.ans}</span>`;
+    lessonGood(1400);
+  },
+  // pairs: pick one on the left, then its partner on the right
+  mpair(d, b) {
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'match' || cur.lock || b.classList.contains('ok')) return;
+    if (d.s === 'l') { app.querySelectorAll('.mbtn.sel').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); it.sel = +d.k; return sfx('tap'); }
+    if (it.sel == null) { $('#shint').textContent = T('sc_matchHint'); return; }
+    if (+d.k !== it.sel) { lessonBad(); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); setTimeout(() => b.classList.remove('no'), 400); return; }
+    const l = app.querySelector('.mbtn.sel'); l.classList.remove('sel'); l.classList.add('ok'); b.classList.add('ok'); it.sel = null; it.left--;
+    if (it.left) return sfx('tap');
+    lessonGood(900);
+  },
   bead(d) {
     if (!cur || !cur.school || cur.lock || cur.it.mode !== 'beads') return;
     const r = +d.r, i = +d.i;
