@@ -15,6 +15,7 @@ const KEY = 'elgatoloco-v1';
 const S = { lang: 'ro', age: 1, learn: 'both', sound: true, setup: false, stars: {}, stickers: [], byAge: {}, best: {}, vibe: true, stat: { plays: 0, smart: 0, daily: 0 }, daily: null };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 if (!S.school || !Array.isArray(S.school.m)) S.school = { m: [] };
+if (!Array.isArray(S.school.r)) S.school.r = [];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 if (!S.setup) {
   const n = (navigator.language || 'ro').slice(0, 2);
@@ -111,8 +112,8 @@ const STR = {
   q_toes: ['Cum se spune în spaniolă?', '¿Cómo se dice en español?', 'How do you say it in Spanish?'],
   q_count: ['Câte sunt?', '¿Cuántos hay?', 'How many are there?'],
   q_solve: ['Cât face?', '¿Cuánto es?', 'What is the answer?'],
-  school: ['Școala pisicului', 'La escuela del gato', 'Cat school'], schoolSub: ['Calcule pas cu pas, cu numărătoarea', 'Cálculo paso a paso, con el ábaco', 'Sums step by step, with the abacus'],
-  schoolNote: ['Fiecare lecție are trei pași: descoperi cu bilele, înțelegi, apoi exersezi. Lecția următoare se deschide când o termini pe aceasta.', 'Cada lección tiene tres pasos: descubres con las bolas, entiendes y luego practicas. La siguiente lección se abre al terminar esta.', 'Each lesson has three steps: discover with the beads, understand, then practise. The next lesson opens when you finish this one.'],
+  school: ['Școala pisicului', 'La escuela del gato', 'Cat school'], schoolSub: ['Calcule și citit, pas cu pas', 'Cálculo y lectura, paso a paso', 'Sums and reading, step by step'],
+  schoolNote: ['Fiecare lecție are trei pași: descoperi, înțelegi, apoi exersezi. Între pași te joci puțin cu pisicul.', 'Cada lección tiene tres pasos: descubres, entiendes y luego practicas. Entre paso y paso juegas un poco con el gato.', 'Each lesson has three steps: discover, understand, then practise. Between steps you play a little with the cat.'],
   ph_0: ['Descoperă', 'Descubre', 'Discover'], ph_1: ['Înțelege', 'Entiende', 'Understand'], ph_2: ['Exersează', 'Practica', 'Practise'],
   sc_i_show: ['Arată numărul {0} cu bilele', 'Muestra el número {0} con las bolas', 'Show the number {0} with the beads'],
   sc_i_add: ['Mai adaugă {0} bile', 'Añade {0} bolas más', 'Add {0} more beads'], sc_i_sub: ['Ia {0} bile', 'Quita {0} bolas', 'Take away {0} beads'],
@@ -123,6 +124,15 @@ const STR = {
   sc_hintRows: ['{0} rânduri de câte {1}', '{0} filas de {1}', '{0} rows of {1}'],
   sc_retry: ['Aproape! Ne mai uităm la bile și exersăm încă o dată.', '¡Casi! Miramos otra vez las bolas y practicamos de nuevo.', 'Almost! Let us look at the beads again and practise once more.'],
   sc_pass: ['Lecție terminată!', '¡Lección terminada!', 'Lesson complete!'],
+  sc_math: ['Calcule', 'Cálculo', 'Sums'], sc_read: ['Citit', 'Lectura', 'Reading'], sc_next: ['Lecția următoare', 'Siguiente lección', 'Next lesson'],
+  sc_true: ['Este corect?', '¿Es correcto?', 'Is it right?'], sc_type: ['Scrie rezultatul', 'Escribe el resultado', 'Type the answer'],
+  sc_pop: ['Sparge balonul potrivit', 'Explota el globo correcto', 'Pop the right balloon'],
+  rd_letter: ['Aceasta este litera {0}. Atinge-o!', 'Esta es la letra {0}. ¡Tócala!', 'This is the letter {0}. Tap it!'],
+  rd_same: ['Găsește la fel, cu litere mari', 'Busca lo mismo en mayúsculas', 'Find the same in capital letters'],
+  rd_starts: ['Cu ce silabă începe?', '¿Con qué sílaba empieza?', 'How does the word start?'],
+  rd_makeSyl: ['Formează silaba {0}', 'Forma la sílaba {0}', 'Make {0}'], rd_makeWord: ['Formează cuvântul', 'Forma la palabra', 'Build the word'],
+  rd_readPick: ['Citește și alege imaginea', 'Lee y elige la imagen', 'Read and pick the picture'], rd_match: ['Se potrivesc?', '¿Coinciden?', 'Do they match?'],
+  rd_order: ['Pune cuvintele în ordine', 'Ordena las palabras', 'Put the words in order'],
   q_missNum: ['Ce număr lipsește?', '¿Qué número falta?', 'Which number is missing?'],
   q_biggest: ['Care număr este cel mai mare?', '¿Cuál es el número más grande?', 'Which number is the biggest?'],
   q_next: ['Ce urmează?', '¿Qué sigue?', 'What comes next?'],
@@ -451,6 +461,7 @@ function hush() {
   VOICE.q = []; VOICE.tok = null; VOICE.busy = false;
   if (VOICE.cur) { try { VOICE.cur.onended = null; VOICE.cur.stop(); } catch (e) {} VOICE.cur = null; }
   try { speechSynthesis.cancel(); } catch (e) {}
+  try { if (window.ElGatoApp && ElGatoApp.stopSpeak) ElGatoApp.stopSpeak(); } catch (e) {}
 }
 // keep = say it after whatever is being spoken instead of interrupting it
 function say(text, lang, keep) {
@@ -468,6 +479,11 @@ function nextVoice() {
   const tts = () => {
     if (VOICE.tok !== tok) return;
     try {
+      if (window.ElGatoApp && ElGatoApp.speak) { // Android app: the phone's own voice, asked for through the app
+        window.__ttsDone = done;
+        if (!ElGatoApp.speak(text, lang)) return done();
+        return void setTimeout(done, 1500 + text.length * 110);
+      }
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang === 'es' ? 'es-ES' : lang === 'en' ? 'en-US' : 'ro-RO';
       u.rate = 0.85; u.onend = u.onerror = done;
@@ -737,7 +753,7 @@ function vMap() {
   const games = `<section class="games"><div class="g-headline"><h3>${T('games')}</h3><button class="pill alt" data-act="go" data-v="quests" aria-label="${T('quests')}">🏆 ${trophies()} / ${QUESTS.length * 3}</button></div>
       <button class="daily${dl.done ? ' done' : ''}" data-act="go" data-v="${dl.id}"><span class="d-ic">${pic(dl.ic)}</span><span class="pc-tx"><b>${T('daily')}</b><small>${T('g_' + dl.id)}: ${dl.unit} ${dl.need}</small></span><span class="pc-go">${dl.done ? '✅' : '▶'}</span></button>
       <div class="g-grid">${GAMES.map(([id, ic]) => `<button class="g-tile" data-act="go" data-v="${id}"><span class="g-ic">${pic(ic)}</span><b>${T('g_' + id)}</b><small>🏆 ${S.best[id] || 0}</small></button>`).join('')}</div>
-      <button class="btn alt" data-act="go" data-v="quests">🏅 ${T('quests')}</button></section><button class="daily school" data-act="go" data-v="school"><span class="d-ic">🧮</span><span class="pc-tx"><b>${T('school')}</b><small>${T('schoolSub')}</small></span><span class="pc-go">${schoolDone()} / ${LESSONS.length}</span></button><h3 class="g-sect">${T('adventure')}</h3>`;
+      <button class="btn alt" data-act="go" data-v="quests">🏅 ${T('quests')}</button></section><button class="daily school" data-act="go" data-v="school"><span class="d-ic">🎓</span><span class="pc-tx"><b>${T('school')}</b><small>${T('schoolSub')}</small></span><span class="pc-go">${schoolDone()} / ${schoolAll()}</span></button><h3 class="g-sect">${T('adventure')}</h3>`;
   app.innerHTML = `<div class="map">
     <header class="topbar"><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button><span class="pill">⭐ ${tot} / ${WORLDS.length * PER_WORLD * 3}</span><span class="grow"></span>
       <button class="icon-btn" data-act="go" data-v="album" aria-label="${T('album')}">📒</button>
@@ -809,6 +825,7 @@ function startLevel(world, idx) {
   walk();
 }
 function walk() {
+  if (cur && cur.school) return lessonStep(); // a break inside a school lesson ends here
   const scene = $('.scene'), ob = $('.obst'), p = $('#panel'), st = cur.seq[cur.pos], last = !st;
   $('.level').classList.remove('arcade');
   p.innerHTML = ''; p.className = 'panel';
@@ -1874,10 +1891,10 @@ function vKart() {
   sfx('meow');
 }
 
-/* ---------- school: sums step by step ----------
-   One fixed path of lessons. Each lesson has three stages: discover (move the beads yourself),
-   understand (see the beads, pick the number) and practise (numbers only, with earlier lessons mixed in).
-   The next lesson opens only after the practice stage is passed. */
+/* ---------- school: sums and reading, step by step ----------
+   Two fixed paths of lessons. Each lesson has three stages: discover (do it with your hands),
+   understand (see it, pick the answer) and practise (on your own, with earlier lessons mixed in).
+   Between stages there is a short break with the cat. The next lesson opens only after practice is passed. */
 const ri = (a, b) => a + rnd(b - a + 1);
 const sAdd = (a, b, rows) => ({ kind: 'add', txt: `${a} + ${b}`, ans: a + b, start: a, target: a + b, a, b, rows });
 const sSub = (a, b, rows) => ({ kind: 'sub', txt: `${a} − ${b}`, ans: a - b, start: a, target: a - b, a, b, rows });
@@ -1909,20 +1926,129 @@ const LESSONS = [
   { n: ['Împărțiri la 6, 7, 8 și 9', 'Dividir entre 6, 7, 8 y 9', 'Dividing by 6, 7, 8 and 9'], g: () => sDiv(ri(2, 10), ri(6, 9)) },
 ];
 const PH_N = [3, 4, 8], PH_IC = ['🔍', '💡', '⚡'], PASS = 7;
-const schoolBase = () => [0, 6, 11][S.age];
-const schoolDone = () => S.school.m.filter(Boolean).length;
+
+/* reading: letters -> syllables -> words -> sentences, in the language of the menus.
+   Letters come with a picture word; words are written in the pieces a child builds them from. */
+const RL = {
+  ro: ['A🐝albină E🐘elefant I🐰iepure O🥚ou U🐻urs', 'M🚗mașină N☁️nor L🦁leu R🦆rață S☀️soare T🚂tren', 'P🐱pisică C🏠casă D🦷dinte B🍌banană V🐄vacă F🦋fluture', 'G🐔găină H🗺️hartă J🧸jucărie Z🦓zebră Ș🐍șarpe Ț🐢țestoasă'],
+  es: ['A🐝abeja E🐘elefante I🏝️isla O🐻oso U🍇uva', 'M✋mano N☁️nube L🌙luna R🐸rana S☀️sol T🐢tortuga', 'P🦆pato C🏠casa D🎲dado B⛵barco V🐄vaca F🌸flor', 'G🐱gato H🐜hormiga J🦒jirafa Z👞zapato Q🧀queso K🥝kiwi'],
+  en: ['A🍎apple E🥚egg I🐛insect O🐙octopus U☂️umbrella', 'M🌙moon N👃nose L🦁lion R🐰rabbit S☀️sun T🐯tiger', 'P🐷pig C🐱cat D🐶dog B🐻bear V🚐van F🐟fish', 'G🐐goat H🎩hat J✈️jet K🔑key W🐋whale Z🦓zebra'],
+};
+const RW = {
+  ro: ['🐻urs 🐺lup 🐷porc 🚂tren 🐴cal 🛏️pat ☁️nor 🍎măr 🦀rac 🌳pom 👃nas 🥚ou 🦁leu',
+    '🏠ca-să 🌙lu-nă 💧a-pă 🚪u-șă 👄gu-ră ✋mâ-nă 🍐pa-ră 🐄va-că 🦆ra-ță 🥛lap-te ☀️soa-re 🌸floa-re 🍞pâi-ne 🐟peș-te 🦷din-te 📖car-te ⛵bar-că 🐶câi-ne 🦊vul-pe 🐸broas-că',
+    '🐱pi-si-că 🚗ma-și-nă 🍌ba-na-nă ✈️a-vi-on 🐘e-le-fant 🦋flu-tu-re 🐝al-bi-nă 🐰ie-pu-re 🍅ro-și-e 🥕mor-cov 🍋lă-mâ-ie 🎩pă-lă-ri-e ☂️um-bre-lă 🥒cas-tra-ve-te 🐔gă-i-nă 🐵mai-mu-ță',
+    '🍒ci-re-șe ⚽min-ge 🦒gi-ra-fă 🔑che-ie 👁️ochi 👂u-re-che 🎒ghioz-dan 🦔a-rici ⏰ceas 🚲bi-ci-cle-tă 🦌cerb 🍄ciu-per-că 🦵ge-nunchi'],
+  es: ['☀️sol 🍞pan 🐟pez 🌊mar 💡luz 🌸flor 🚂tren 🧂sal 🐻o-so 👁️o-jo 🍇u-va',
+    '🏠ca-sa 🌙lu-na 🐱ga-to 🦆pa-to ✋ma-no 🐄va-ca 🐸ra-na 🐺lo-bo 🐵mo-no 👄bo-ca 🍐pe-ra 🌹ro-sa 🍲so-pa 🛏️ca-ma 🎲da-do 📖li-bro ☁️nu-be 🐯ti-gre 🍋li-món ⛵bar-co',
+    '⚽pe-lo-ta 🍅to-ma-te 👞za-pa-to 🐰co-ne-jo 🐝a-be-ja 🐘e-le-fan-te 🦋ma-ri-po-sa 🍌plá-ta-no 🍎man-za-na ✈️a-vión 🎩som-bre-ro 🐢tor-tu-ga 📱te-lé-fo-no 🐜hor-mi-ga ☂️pa-ra-guas 🥕za-na-ho-ria',
+    '🥛le-che 🚗co-che 🔑lla-ve 🌧️llu-via 🐤po-llo 🐴ca-ba-llo 🧀que-so 🐶pe-rro 👦ni-ño 🕷️a-ra-ña 🎸gui-ta-rra ⛰️mon-ta-ña 🥄cu-cha-ra 🐔ga-lli-na'],
+  en: ['🐱cat 🐶dog 🐷pig ☀️sun 🎩hat 🚌bus 🛏️bed 🦊fox 🐔hen 🦇bat 🐛bug 🗺️map 🐜ant 🚐van 🥚egg',
+    '🐸frog 🥛milk ⭐star 🦆duck 🐻bear 🦁lion ⚽ball 🔔bell 🥁drum 🦀crab ✋hand 🎂cake 🦴bone 🌹rose ⛵boat 🌧️rain ❄️snow 🍃leaf',
+    '🍎ap-ple 🐯ti-ger 🦓ze-bra 🍋lem-on 🤖ro-bot 🐰rab-bit 🐵mon-key 🍌ba-na-na 🌸flow-er ✏️pen-cil 🥕car-rot 🚀rock-et 🐢tur-tle 🕷️spi-der 🐉drag-on 🐘el-e-phant 🦋but-ter-fly',
+    '🐟f-i-sh 🚢sh-i-p 👞sh-oe 🐑sh-ee-p 🦈sh-ar-k 🧀ch-ee-se 🐤ch-i-ck 🌙m-oo-n 📖b-oo-k 🌳t-r-ee 🐝b-ee 🦷t-oo-th 🛁b-a-th 🍒ch-err-y'],
+};
+// sentence | question | right answer | three wrong answers; the pictures are shared by all languages
+const SPIC = ['🐱🥛', '👧🍎', '🐶🌳', '👨📖', '☀️☁️', '🐟🌊', '👩🎂', '🐝🌸', '👦🚲', '🌧️☔', '🐵🍌', '👵🎩'];
+const RS = {
+  ro: ['Pisica bea lapte.|Ce bea pisica?|lapte|apă|suc|ceai', 'Ana are un măr roșu.|Ce are Ana?|un măr|o pară|o minge|o carte', 'Câinele aleargă în parc.|Unde aleargă câinele?|în parc|în casă|la școală|pe plajă',
+    'Tata citește o carte.|Cine citește?|tata|mama|bunica|pisica', 'Soarele este pe cer.|Unde este soarele?|pe cer|în apă|sub pat|în copac', 'Peștele înoată în apă.|Ce face peștele?|înoată|zboară|doarme|cântă',
+    'Mama face o prăjitură.|Ce face mama?|o prăjitură|o supă|un desen|un pod', 'Albina zboară la floare.|Unde zboară albina?|la floare|la mare|la lună|la școală', 'Dan merge cu bicicleta.|Cu ce merge Dan?|cu bicicleta|cu trenul|cu barca|cu avionul',
+    'Afară plouă mult.|Cum este vremea?|plouă|ninge|e soare|bate vântul', 'Maimuța mănâncă o banană.|Ce mănâncă maimuța?|o banană|un măr|pâine|pește', 'Bunica are o pălărie.|Ce are bunica?|o pălărie|o umbrelă|o cheie|o minge'],
+  es: ['El gato bebe leche.|¿Qué bebe el gato?|leche|agua|zumo|té', 'Ana tiene una manzana roja.|¿Qué tiene Ana?|una manzana|una pera|una pelota|un libro', 'El perro corre en el parque.|¿Dónde corre el perro?|en el parque|en casa|en la escuela|en la playa',
+    'Papá lee un libro.|¿Quién lee?|papá|mamá|la abuela|el gato', 'El sol está en el cielo.|¿Dónde está el sol?|en el cielo|en el agua|bajo la cama|en el árbol', 'El pez nada en el agua.|¿Qué hace el pez?|nada|vuela|duerme|canta',
+    'Mamá hace un pastel.|¿Qué hace mamá?|un pastel|una sopa|un dibujo|un puente', 'La abeja vuela a la flor.|¿A dónde vuela la abeja?|a la flor|al mar|a la luna|a la escuela', 'Dani va en bicicleta.|¿En qué va Dani?|en bicicleta|en tren|en barco|en avión',
+    'Hoy llueve mucho.|¿Qué tiempo hace?|llueve|nieva|hace sol|hace viento', 'El mono come un plátano.|¿Qué come el mono?|un plátano|una manzana|pan|pescado', 'La abuela tiene un sombrero.|¿Qué tiene la abuela?|un sombrero|un paraguas|una llave|una pelota'],
+  en: ['The cat drinks milk.|What does the cat drink?|milk|water|juice|tea', 'Anna has a red apple.|What does Anna have?|an apple|a pear|a ball|a book', 'The dog runs in the park.|Where does the dog run?|in the park|at home|at school|on the beach',
+    'Dad reads a book.|Who reads?|Dad|Mum|Grandma|the cat', 'The sun is in the sky.|Where is the sun?|in the sky|in the water|under the bed|in the tree', 'The fish swims in the water.|What does the fish do?|it swims|it flies|it sleeps|it sings',
+    'Mum makes a cake.|What does Mum make?|a cake|a soup|a drawing|a bridge', 'The bee flies to the flower.|Where does the bee fly?|to the flower|to the sea|to the moon|to school', 'Dan rides a bike.|What does Dan ride?|a bike|a train|a boat|a plane',
+    'It rains a lot today.|What is the weather like?|it rains|it snows|it is sunny|it is windy', 'The monkey eats a banana.|What does the monkey eat?|a banana|an apple|bread|fish', 'Grandma has a hat.|What does Grandma have?|a hat|an umbrella|a key|a ball'],
+};
+const EN2 = ['at', 'in', 'on', 'up', 'it', 'an', 'us', 'if', 'am', 'is', 'go', 'no', 'so', 'me', 'we', 'he'];
+const rCut = s => { const m = s.match(/^([^\p{L}]+)(.+)$/u); return { e: m[1], p: m[2].split('-'), w: m[2].replace(/-/g, '') }; };
+const RLD = {}, RWD = {}, RSD = {};
+for (const k of LANGS) {
+  RLD[k] = RL[k].map(g => g.split(' ').map(s => { const c = rCut(s.slice(1)); return { l: s[0], e: c.e, w: c.w }; }));
+  RWD[k] = RW[k].map(g => g.split(' ').map(rCut));
+  RSD[k] = RS[k].map(s => { const a = s.split('|'); return { t: a[0], q: a[1], a: a[2], x: a.slice(3) }; });
+}
+const rChoice = (txt, q, stim, ok, others, cls, sy, col) => { const o = shuffle([ok, ...others]); return { mode: 'choice', txt, q, stim, o: { opts: o, ans: o.indexOf(ok) }, cls, sy: sy || [], col }; };
+const rTF = (txt, q, stim, yes) => ({ mode: 'choice', txt, q, stim, o: { opts: ['👍', '👎'], ans: yes ? 0 : 1 }, cls: 'em', sy: [] });
+const wordH = w => `<span class="word">${w}</span>`;
+const sentH = s => `<span class="sent">${s}</span>`;
+function rLetter(g, ph) {
+  const D = RLD[S.lang], x = pick(D[g]), others = sample(D.slice(0, g + 1).flat().filter(y => y.l !== x.l), 3).map(y => y.l);
+  if (ph === 0) return rChoice('l0' + x.l, T('rd_letter', x.l), `${big(x.e)}<span class="word"><b class="hl">${up(x.w[0])}</b>${up(x.w.slice(1))}</span>`, x.l, others, 'ltr', [x.l, x.w]);
+  if (ph === 1) return rChoice('l1' + x.l, T('rd_same'), `<span class="word lc">${x.l.toLocaleLowerCase('es')}</span>`, x.l, others, 'ltr', [x.l]);
+  return rChoice('l2' + x.l, T('q_first'), big(x.e), x.l, others, 'ltr', [x.w]);
+}
+function rSyl(ph) {
+  const C = [...'mnlrstpdbvf'], V5 = [...'aeiou'], en = S.lang === 'en';
+  if (ph === 2) { // a picture: which two letters does its word start with?
+    const w = pick(RWD[S.lang][0].concat(RWD[S.lang][1]).filter(x => /^[^aeiouăâîhq][aeiou]/.test(x.w))), c = w.w[0], v = w.w[1];
+    return rChoice('s2' + w.w, T('rd_starts'), big(w.e), up(c + v), [...sample(V5.filter(x => x !== v), 2).map(x => up(c + x)), up(pick(C.filter(x => x !== c)) + v)], 'ltr', [w.w]);
+  }
+  const s = en ? pick(EN2) : pick(C) + pick(V5);
+  if (ph === 0) return { mode: 'build', txt: 's0' + s, q: T('rd_makeSyl', up(s)), qs: T('rd_makeSyl', s), pic: '', parts: [...s].map(up), extra: [up(pick([...C, ...V5].filter(x => !s.includes(x))))], model: up(s), sy: [s] };
+  const others = en ? sample(EN2.filter(x => x !== s), 3) : [s[0] + pick(V5.filter(x => x !== s[1])), pick(C.filter(x => x !== s[0])) + s[1], s[1] + s[0]];
+  return rChoice('s1' + s, T('rd_same'), `<span class="word lc">${s}</span>`, up(s), others.map(up), 'ltr', [s]);
+}
+function rWord(lv, ph, n) {
+  const ws = RWD[S.lang][lv], w = pick(ws), oth = k => sample(ws.filter(x => x !== w), k);
+  const kind = ph === 0 ? 'build' : ph === 1 ? 'w2p' : ['p2w', 'buildx', 'w2p', 'tf'][n % 4];
+  if (kind === 'build' || kind === 'buildx') {
+    const parts = (w.p.length > 1 ? w.p : [...w.w]).map(up);
+    return { mode: 'build', txt: kind + w.w, q: T('rd_makeWord'), pic: big(w.e), parts, extra: [], model: kind === 'build' ? parts.join('·') : '', sy: [w.w] };
+  }
+  if (kind === 'w2p') return rChoice('w2p' + w.w, T('rd_readPick'), wordH(up(w.w)), w.e, oth(3).map(x => x.e), 'em');
+  if (kind === 'p2w') return rChoice('p2w' + w.w, T('q_picWord'), big(w.e), up(w.w), oth(3).map(x => up(x.w)), 'txt');
+  const yes = rnd(2);
+  return rTF('tf' + w.w, T('rd_match'), big(w.e) + '<span class="brk"></span>' + wordH(up((yes ? w : oth(1)[0]).w)), yes);
+}
+// which: 0 = read a sentence, 1 = put its words in order, 2 = answer a question about it
+function rSent(which, ph, n) {
+  const ss = RSD[S.lang], i = rnd(ss.length), s = ss[i], e = SPIC[i];
+  const build = model => ({ mode: 'build', txt: 'sb' + i, q: T('rd_order'), pic: `<span class="mid">${e}</span>`, parts: s.t.replace(/[.!?¿¡]/g, '').split(' '), extra: [], model: model ? s.t : '', sy: [s.t], wide: true });
+  const s2p = () => rChoice('s2p' + i, T('rd_readPick'), sentH(s.t), e, sample(SPIC.filter((_, k) => k !== i), 3), 'em duo');
+  if (which === 2) return rChoice('sq' + i, s.q, (ph === 0 ? `<span class="mid">${e}</span><span class="brk"></span>` : '') + sentH(s.t), s.a, s.x, 'txt', [], true);
+  if (which === 1) return build(ph === 0);
+  if (ph === 0) return build(true);
+  if (ph === 1 || n % 2 === 0) return s2p();
+  const yes = rnd(2), j = yes ? i : pick(ss.map((_, k) => k).filter(k => k !== i));
+  return rTF('stf' + i, T('rd_match'), `<span class="mid">${SPIC[j]}</span><span class="brk"></span>` + sentH(s.t), yes);
+}
+const RLESSONS = [
+  { n: ['Vocalele', 'Las vocales', 'The vowels'], g: p => rLetter(0, p) },
+  { n: ['Literele M, N, L, R, S, T', 'Las letras M, N, L, R, S, T', 'The letters M, N, L, R, S, T'], g: p => rLetter(1, p) },
+  { n: ['Literele P, C, D, B, V, F', 'Las letras P, C, D, B, V, F', 'The letters P, C, D, B, V, F'], g: p => rLetter(2, p) },
+  { n: ['Literele G, H, J, Z, Ș, Ț', 'Las letras G, H, J, Z, Q, K', 'The letters G, H, J, K, W, Z'], g: p => rLetter(3, p) },
+  { n: ['Silabe', 'Sílabas', 'Joining two letters'], g: p => rSyl(p) },
+  { n: ['Cuvinte scurte', 'Palabras cortas', 'Short words'], g: (p, n) => rWord(0, p, n) },
+  { n: ['Cuvinte din două silabe', 'Palabras de dos sílabas', 'Four-letter words'], g: (p, n) => rWord(1, p, n) },
+  { n: ['Cuvinte lungi', 'Palabras largas', 'Long words'], g: (p, n) => rWord(2, p, n) },
+  { n: ['Grupuri: ce, ci, ge, gi, che, chi', 'Letras dobles: ch, ll, qu, ñ, rr', 'Letter pairs: sh, ch, oo, ee, th'], g: (p, n) => rWord(3, p, n) },
+  { n: ['Propoziții', 'Frases', 'Sentences'], g: (p, n) => rSent(0, p, n) },
+  { n: ['Cuvintele în ordine', 'Las palabras en orden', 'Words in order'], g: (p, n) => rSent(1, p, n) },
+  { n: ['Înțeleg ce citesc', 'Entiendo lo que leo', 'I understand what I read'], g: (p, n) => rSent(2, p, n) },
+];
+// the two paths: sums and reading; base = how many lessons are open from the start for each age group
+const TRACKS = { m: { list: LESSONS, base: [0, 6, 11] }, r: { list: RLESSONS, base: [0, 5, 9] } };
+const tabKey = () => (S.school.tab === 'r' ? 'r' : 'm');
+const schoolDone = () => S.school.m.filter(Boolean).length + S.school.r.filter(Boolean).length;
+const schoolAll = () => LESSONS.length + RLESSONS.length;
 
 function vSchool() {
-  const st = S.school.m, base = schoolBase();
+  const k = tabKey(), tr = TRACKS[k], st = S.school[k], base = tr.base[S.age];
   let last = -1; st.forEach((v, i) => { if (v) last = i; });
   const nextI = Math.max(base, last + 1);
-  const rows = LESSONS.map((L, i) => {
+  const rows = tr.list.map((L, i) => {
     const open = i <= base || st[i - 1] || st[i];
     return open ? `<button class="lesson${i === nextI ? ' next' : ''}" data-act="lesson" data-i="${i}"><b>${i + 1}</b><span>${L.n[li()]}</span>${starsStr(st[i] || 0)}</button>`
       : `<button class="lesson" disabled><b>🔒</b><span>${L.n[li()]}</span></button>`;
   }).join('');
-  app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('school')}</h2><span class="pill">${schoolDone()} / ${LESSONS.length}</span></header>
-    <div class="body"><p class="note">${T('schoolNote')}</p><div class="lessons">${rows}</div></div></div>`;
+  app.innerHTML = `<div class="page"><header class="topbar"><button class="icon-btn" data-act="go" data-v="map" aria-label="${T('toMap')}">←</button><h2 class="grow">${T('school')}</h2><span class="pill">${schoolDone()} / ${schoolAll()}</span></header>
+    <div class="body"><div class="seg tabs2">${[['m', '🧮', 'sc_math'], ['r', '📖', 'sc_read']].map(([v, ic, s]) => `<button data-act="stab" data-k="${v}" aria-pressed="${k === v}">${ic} ${T(s)}</button>`).join('')}</div>
+      <p class="note">${T('schoolNote')}</p><div class="lessons">${rows}</div></div></div>`;
   const nx = app.querySelector('.lesson.next'); if (nx) nx.scrollIntoView({ block: 'center' });
 }
 
@@ -1935,7 +2061,12 @@ function beadCells(it) {
   const s = (it.kind === 'sub' ? 'a'.repeat(it.a - it.b) + 'x'.repeat(it.b) : 'a'.repeat(it.a) + 'b'.repeat(it.b)).padEnd(Math.max(1, Math.ceil((it.a + (it.kind === 'sub' ? 0 : it.b)) / 10)) * 10, '.');
   return s.match(/.{10}/g);
 }
-const beadPic = it => { const rows = beadCells(it); return `<div class="abacus r${rows.length > 2 ? 10 : rows.length}">${rows.map(r => `<div class="rod">${[...r].map(c => `<i class="bead ${c === '.' ? 'off' : c}"></i>`).join('')}</div>`).join('')}</div>`; };
+// skin = two emoji drawn instead of the red and blue beads, so the same sum is also seen as apples or fish
+const SKINS = [['🍎', '🍏'], ['🐟', '🐠'], ['⭐', '🌙'], ['🐭', '🐹'], ['🍓', '🍒']];
+const beadPic = (it, skin) => {
+  const rows = beadCells(it);
+  return `<div class="abacus r${rows.length > 2 ? 10 : rows.length}${skin ? ' em' : ''}">${rows.map(r => `<div class="rod">${[...r].map(c => `<i class="bead ${c === '.' ? 'off' : c}">${skin && c !== '.' ? skin[c === 'b' ? 1 : 0] : ''}</i>`).join('')}</div>`).join('')}</div>`;
+};
 function paintBeads() {
   const it = cur.it, box = $('.abacus'); if (!box) return;
   const grp = it.kind === 'mul' || it.kind === 'div';
@@ -1946,100 +2077,175 @@ function sOpts(c) {
   const o = shuffle([c, ...sample([c - 1, c + 1, c - 2, c + 2, c + 10, c - 10].filter(v => v >= 0), 3)]);
   return { opts: o.map(String), ans: o.indexOf(c) };
 }
+// a sum takes a different shape from one question to the next: beads to move, numbers to pick,
+// a keypad to type on, true or false, balloons to pop
+function mathFmt(it) {
+  const show = it.kind === 'show', bond = it.kind === 'bond';
+  it.sy = [];
+  if (cur.ph === 0) {
+    it.mode = 'beads';
+    it.q = T('sc_i_' + it.kind, it.kind === 'div' || it.kind === 'mul' || show ? it.a : it.b, it.b);
+    return;
+  }
+  const f = cur.ph === 1 ? 'choice' : ['choice', 'pad', 'tf', 'pop'][cur.n % 4];
+  it.q = f === 'pad' ? T(show ? 'q_count' : 'sc_type') : f === 'tf' ? T('sc_true') : f === 'pop' ? T('sc_pop') : show ? T('q_count') : bond ? T('q_missNum') : T('q_solve');
+  it.stim = show ? '' : expr(it.txt);
+  it.help = beadPic(it, cur.ph === 1 && cur.n % 2 ? SKINS[cur.i % SKINS.length] : null);
+  it.helpOn = cur.ph === 1 || show;
+  if (f === 'pad') { it.mode = 'pad'; return; }
+  it.mode = 'choice';
+  if (f === 'tf') {
+    const yes = rnd(2), v = yes ? it.ans : Math.abs(it.ans + pick([-1, 1, 2, it.ans > 2 ? -2 : 3]));
+    it.stim = expr(show ? String(v) : bond ? `${it.a} + ${v} = 10` : `${it.txt} = ${v}`);
+    it.o = { opts: ['👍', '👎'], ans: yes ? 0 : 1 }; it.cls = 'em';
+  } else { it.o = sOpts(it.ans); it.cls = 'num'; it.pop = f === 'pop'; }
+}
 
 function startLesson(i) {
   hush();
-  cur = { school: true, i, L: LESSONS[i], ph: 0, n: 0, ok: 0, tries: 0, left: PH_N[0], seen: new Set(), it: null, wrong: 0, lock: false };
+  const tr = tabKey();
+  cur = { school: true, tr, i, L: TRACKS[tr].list[i], ph: 0, n: 0, ok: 0, tries: 0, left: PH_N[0], seen: new Set(), it: null, wrong: 0, lock: false, streak: 0, lastQ: '' };
   view = 'lesson';
   lessonStep();
 }
+function lessonFrame(inner) {
+  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
+  app.innerHTML = `<div class="page lesson-pg"><header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2><button class="cat mini" data-act="pet" aria-label="ElGatoLoco">${cat('sit')}</button></header>
+    <div class="phases">${[0, 1, 2].map(p => `<span class="ph${p === cur.ph ? ' on' : p < cur.ph ? ' was' : ''}">${PH_IC[p]} ${T('ph_' + p)}</span>`).join('')}</div>
+    <div class="dots">${Array.from({ length: total }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="panel show" id="panel">${inner}</div></div>`;
+}
 function lessonStep() {
+  const list = TRACKS[cur.tr].list;
   let L = cur.L;
   // practice mixes in two questions from earlier lessons so that old skills stay fresh
-  if (cur.ph === 2 && cur.i > 0 && (cur.n === 2 || cur.n === 5)) L = LESSONS[rnd(cur.i)];
-  let it; for (let k = 0; k < 40; k++) { it = L.g(); if (!cur.seen.has(it.txt)) break; }
+  if (cur.ph === 2 && cur.i > 0 && (cur.n === 2 || cur.n === 5)) L = list[rnd(cur.i)];
+  let it; for (let k = 0; k < 40; k++) { it = L.g(cur.ph, cur.n); if (!cur.seen.has(it.txt)) break; }
   cur.seen.add(it.txt); cur.it = it; cur.wrong = 0; cur.lock = false;
-  const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
-  const head = `<header class="topbar"><button class="icon-btn" data-act="go" data-v="school" aria-label="←">←</button><h2 class="grow l-name">${cur.L.n[li()]}</h2></header>
-    <div class="phases">${[0, 1, 2].map(p => `<span class="ph${p === cur.ph ? ' on' : p < cur.ph ? ' was' : ''}">${PH_IC[p]} ${T('ph_' + p)}</span>`).join('')}</div>
-    <div class="dots">${Array.from({ length: total }, (_, k) => `<i class="${k < cur.n ? 'on' : ''}"></i>`).join('')}</div>`;
-  let body, q;
-  if (cur.ph === 0) {
-    q = T('sc_i_' + it.kind, it.kind === 'div' ? it.a : it.kind === 'mul' ? it.a : it.kind === 'show' ? it.a : it.b, it.b);
+  if (!it.mode) mathFmt(it);
+  const q = it.q, top = it.stim || '';
+  let body;
+  if (it.mode === 'beads') {
     cur.c = Array.from({ length: it.rows }, (_, r) => Math.max(0, Math.min(10, it.start - r * 10)));
-    body = `<div class="stim s-top">${it.kind === 'show' ? '' : `<span class="expr">${it.txt}</span>`}<span class="count">🧮 <b id="tot">0</b></span></div>
+    body = `<div class="stim s-top">${it.kind === 'show' ? '' : expr(it.txt)}<span class="count">🧮 <b id="tot">0</b></span></div>
       <div class="abacus live r${it.rows > 2 ? 10 : it.rows}"></div><p class="hintline" id="shint"></p>
       <button class="btn" data-act="scheck">✔ ${T('sc_ready')}</button>`;
+  } else if (it.mode === 'build') {
+    it.at = 0;
+    body = `<div class="stim s-top grow">${it.pic}${it.sy.length ? sayBtn(it.sy[0], S.lang) : ''}${it.model ? `<span class="brk"></span><span class="model">${it.model}</span>` : ''}</div>
+      <div class="built${it.wide ? ' wide' : ''}">${it.parts.map((_, k) => `<span class="${k ? '' : 'cur'}"></span>`).join('')}</div>
+      <div class="tiles rt${it.wide ? ' wide' : ''}">${shuffle([...it.parts, ...it.extra]).map(t => `<button class="tile" data-act="rtile" data-t="${t}">${t}</button>`).join('')}</div>`;
+  } else if (it.mode === 'pad') {
+    body = `<div class="stim s-top">${top}<span class="pval" id="pval"></span></div><div class="help"${it.helpOn ? '' : ' hidden'}>${it.help}</div><p class="hintline" id="shint"></p>
+      <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => `<button data-act="pkey" data-k="${d}">${d}</button>`).join('')}<button class="del" data-act="pkey" data-k="del" aria-label="⌫">⌫</button><button class="go" data-act="pkey" data-k="ok">✔ ${T('sc_ready')}</button></div>`;
   } else {
-    q = it.kind === 'show' ? T('q_count') : it.kind === 'bond' ? T('q_missNum') : T('q_solve');
-    it.o = sOpts(it.ans);
-    const picOn = cur.ph === 1 || it.kind === 'show';
-    body = `<div class="stim s-top">${it.kind === 'show' ? '' : `<span class="expr">${it.txt}</span>`}</div>
-      <div class="help"${picOn ? '' : ' hidden'}>${beadPic(it)}</div>
-      <div class="opts">${it.o.opts.map((o, k) => `<button class="opt num" data-act="sopt" data-i="${k}">${o}</button>`).join('')}</div>`;
+    body = `<div class="stim s-top${it.help ? '' : ' grow'}">${top}</div>${it.help ? `<div class="help"${it.helpOn ? '' : ' hidden'}>${it.help}</div>` : ''}
+      <div class="opts${it.col ? ' col' : ''}${it.pop ? ' pops' : ''}${it.o.opts.length === 2 ? ' two' : ''}">${it.o.opts.map((o, k) => `<button class="opt ${it.cls || ''}" data-act="sopt" data-i="${k}">${o}</button>`).join('')}</div>`;
   }
-  app.innerHTML = `<div class="page lesson-pg">${head}<div class="panel show" id="panel"><p class="q" data-act="say" data-lang="${S.lang}" data-text="${q.replace(/"/g, '')}">${q}</p>${body}</div></div>`;
-  if (cur.ph === 0) paintBeads();
-  if (cur.n === 0 || cur.ph === 0) say(q, S.lang);
+  const spoken = it.qs || q;
+  lessonFrame(`<p class="q" data-act="say" data-lang="${S.lang}" data-text="${spoken.replace(/"/g, '')}">${q}</p>${body}`);
+  if (it.mode === 'beads') paintBeads();
+  // the question is read out when it changes; the word, letter or sentence to work on is always read out
+  (q !== cur.lastQ || it.mode === 'beads' ? [spoken] : []).concat(it.sy).forEach((t, k) => say(t, S.lang, k > 0));
+  cur.lastQ = q;
 }
+// a right answer: the little cat at the top hops, and a run of right answers gets a cheer
+function lessonGood(wait) {
+  cur.lock = true; sfx('good'); buzz(25);
+  if (!cur.wrong) { cur.streak++; if (cur.ph === 2) cur.ok++; } else cur.streak = 0;
+  const c = $('.lesson-pg .cat.mini');
+  if (c) { hop(c); floatEm(c, cur.streak >= 3 ? '🔥' : pick(['💗', '⭐', '✨']), c.clientWidth / 2 - 12, 30); }
+  if (cur.streak === 3 || cur.streak === 6) later(250, () => sfx('meow'));
+  later(wait, lessonNext);
+}
+function lessonBad() { sfx('bad'); buzz([70, 50, 70]); cur.wrong++; cur.streak = 0; }
 function lessonNext() {
   cur.n++;
   const total = cur.ph === 1 ? cur.left : PH_N[cur.ph];
   if (cur.n < total) return lessonStep();
-  if (cur.ph < 2) { cur.ph++; cur.n = 0; cur.ok = 0; cur.left = PH_N[1]; cur.seen = new Set(); sfx('clap'); return lessonStep(); }
+  if (cur.ph < 2) { // a stage is over: a short break with the cat, then the next stage
+    cur.ph++; cur.n = 0; cur.ok = 0; cur.left = PH_N[1]; cur.seen = new Set(); cur.lastQ = ''; sfx('clap');
+    const b = cur.ph === 1 ? pick(['pet', 'tickle']) : pick(['feed', 'bubbles', 'hide', 'chase']);
+    lessonFrame('');
+    return (BREAK_FN[b] || petBreak)(b);
+  }
   if (cur.ok >= PASS) return lessonDone();
-  // not there yet: look at the beads twice more, then practise again
+  // not there yet: look at the pictures twice more, then practise again
   const tok = cur; cur.tries++;
   app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('wave')}</button><h2>${cur.ok} / ${PH_N[2]}</h2><p class="label">${T('sc_retry')}</p>
     <div class="row"><button class="btn" data-act="sretry">${T('again')} ▶</button><button class="btn alt" data-act="go" data-v="school">${T('school')}</button></div></div>`;
   cur = tok;
 }
 function lessonDone() {
-  const i = cur.i, stars = cur.tries === 0 ? 3 : cur.tries === 1 ? 2 : 1;
-  S.school.m[i] = Math.max(S.school.m[i] || 0, stars);
-  for (let k = 0; k < S.school.m.length; k++) S.school.m[k] = S.school.m[k] || 0;
-  save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
+  const i = cur.i, tr = cur.tr, m = S.school[tr], list = TRACKS[tr].list, stars = cur.tries === 0 ? 3 : cur.tries === 1 ? 2 : 1;
+  m[i] = Math.max(m[i] || 0, stars);
+  for (let k = 0; k < m.length; k++) m[k] = m[k] || 0;
+  S.school.tab = tr; save(); sfx('win'); setTimeout(() => sfx('meow'), 950);
   cur = null; view = 'done';
   app.innerHTML = `<div class="done"><button class="cat" data-act="pet" aria-label="ElGatoLoco">${cat('cheer')}</button><h2>${T('sc_pass')}</h2>
-    <div class="stars3">${[1, 2, 3].map(k => `<span class="${k <= stars ? 'on' : ''}">★</span>`).join('')}</div><p class="label">${LESSONS[i].n[li()]}</p>
-    <div class="row">${i + 1 < LESSONS.length ? `<button class="btn" data-act="lesson" data-i="${i + 1}">${T('next')} ▶</button>` : ''}
+    <div class="stars3">${[1, 2, 3].map(k => `<span class="${k <= stars ? 'on' : ''}">★</span>`).join('')}</div><p class="label">${list[i].n[li()]}</p>
+    <div class="row">${i + 1 < list.length ? `<button class="btn" data-act="lesson" data-i="${i + 1}">${T('sc_next')} ▶</button>` : ''}
       <button class="btn alt" data-act="go" data-v="school">${T('school')}</button><button class="btn alt" data-act="go" data-v="map">${T('toMap')}</button></div></div>`;
 }
 const SCHOOL_ACT = {
+  stab(d) { sfx('tap'); S.school.tab = d.k; save(); vSchool(); },
   lesson(d) { sfx('tap'); startLesson(+d.i); },
-  sretry() { if (!cur || !cur.school) return; sfx('tap'); cur.ph = 1; cur.n = 0; cur.ok = 0; cur.left = 2; cur.seen = new Set(); lessonStep(); },
+  sretry() { if (!cur || !cur.school) return; sfx('tap'); cur.ph = 1; cur.n = 0; cur.ok = 0; cur.left = 2; cur.seen = new Set(); cur.lastQ = ''; lessonStep(); },
   bead(d) {
-    if (!cur || !cur.school || cur.lock || cur.ph !== 0) return;
+    if (!cur || !cur.school || cur.lock || cur.it.mode !== 'beads') return;
     const r = +d.r, i = +d.i;
     cur.c[r] = i < cur.c[r] ? i : i + 1;
     sfx('tap'); paintBeads();
   },
   scheck() {
-    if (!cur || !cur.school || cur.lock || cur.ph !== 0) return;
+    if (!cur || !cur.school || cur.lock || cur.it.mode !== 'beads') return;
     const it = cur.it, rows = cur.c.filter(n => n > 0), sum = cur.c.reduce((a, b) => a + b, 0), even = rows.every(n => n === rows[0]);
     const ok = it.kind === 'mul' ? sum === it.target && even && (rows.length === it.a || rows.length === it.b)
       : it.kind === 'div' ? even && rows.length === it.b && rows[0] === it.ans : sum === it.target;
     if (ok) {
-      cur.lock = true; sfx('good'); buzz(25);
       const ex = $('.s-top'); ex.innerHTML = `<span class="expr good">${it.kind === 'show' ? it.txt : it.kind === 'bond' ? `${it.a} + ${it.b} = 10` : `${it.txt} = ${it.ans}`}</span>`;
-      later(1300, lessonNext);
+      lessonGood(1300);
     } else {
-      sfx('bad'); buzz([70, 50, 70]);
+      lessonBad();
       const box = $('.abacus'); box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
-      if (++cur.wrong >= 2) $('#shint').textContent = T(it.kind === 'mul' || it.kind === 'div' ? 'sc_hintRows' : 'sc_hint', it.kind === 'div' ? it.b : it.kind === 'mul' ? it.a : it.target, it.kind === 'div' ? it.ans : it.b);
+      if (cur.wrong >= 2) $('#shint').textContent = T(it.kind === 'mul' || it.kind === 'div' ? 'sc_hintRows' : 'sc_hint', it.kind === 'div' ? it.b : it.kind === 'mul' ? it.a : it.target, it.kind === 'div' ? it.ans : it.b);
     }
   },
   sopt(d, b) {
-    const it = cur && cur.school && cur.it; if (!it || cur.lock || b.classList.contains('no')) return;
-    if (+d.i === it.o.ans) {
-      b.classList.add('ok'); cur.lock = true; sfx('good'); buzz(25);
-      if (!cur.wrong && cur.ph === 2) cur.ok++;
-      later(cur.wrong ? 1400 : 650, lessonNext);
-    } else {
-      b.classList.add('no'); sfx('bad'); buzz([70, 50, 70]); cur.wrong++;
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'choice' || cur.lock || b.classList.contains('no')) return;
+    if (+d.i === it.o.ans) { b.classList.add('ok'); lessonGood(cur.wrong ? 1400 : 700); }
+    else {
+      b.classList.add('no'); lessonBad();
       const h = $('.help'); if (h) h.hidden = false; // a slip in practice brings the beads back
       if (cur.wrong >= 2) $('.opts').children[it.o.ans].classList.add('hint');
     }
+  },
+  // keypad: type the answer, then confirm
+  pkey(d) {
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'pad' || cur.lock) return;
+    const el = $('#pval'), v = el.textContent;
+    if (d.k === 'del') { el.textContent = v.slice(0, -1); return sfx('tap'); }
+    if (d.k !== 'ok') { if (v.length < 3) el.textContent = v + d.k; return sfx('tap'); }
+    if (!v) return;
+    if (+v === it.ans) { el.classList.add('good'); return lessonGood(cur.wrong ? 1300 : 700); }
+    lessonBad(); el.textContent = '';
+    el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+    $('.help').hidden = false;
+    if (cur.wrong >= 2) $('#shint').textContent = '= ' + it.ans;
+  },
+  // building a syllable, a word or a sentence: tap the pieces in order
+  rtile(d, b) {
+    const it = cur && cur.school && cur.it; if (!it || it.mode !== 'build' || cur.lock || b.classList.contains('used')) return;
+    if (d.t !== it.parts[it.at]) {
+      lessonBad(); b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); setTimeout(() => b.classList.remove('no'), 400);
+      if (cur.wrong >= 2) { const t = [...$('.tiles').children].find(x => !x.classList.contains('used') && x.dataset.t === it.parts[it.at]); if (t) t.classList.add('hint'); }
+      return;
+    }
+    const sl = $('.built').children;
+    b.classList.add('used'); b.classList.remove('hint'); sl[it.at].textContent = d.t; sl[it.at].className = 'in'; it.at++;
+    if (it.at < it.parts.length) { sl[it.at].className = 'cur'; return sfx('tap'); }
+    $('.built').classList.add('good'); say(it.sy[0], S.lang);
+    lessonGood(1600);
   },
 };
 
@@ -2068,7 +2274,7 @@ const ACT = {
   say(d) { say(d.text, d.lang); },
   reset() {
     if (!resetArmed) { resetArmed = true; return vSettings(); }
-    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.school = { m: [] }; S.setup = false; save(); show('title');
+    S.stars = {}; S.stickers = []; S.byAge = {}; S.best = {}; S.stat = null; S.daily = null; S.school = { m: [], r: [] }; S.setup = false; save(); show('title');
   },
   pet(d, b) { sfx('meow'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); floatEm(b, pick(['💗', '💜', '😻']), b.clientWidth / 2 - 12, -6); },
   hi5(d, b) {
@@ -2138,6 +2344,6 @@ app.addEventListener('click', e => {
   if (b && !b.disabled) ACT[b.dataset.act](b.dataset, b);
 });
 
-window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk(), LESSONS };
+window.__chispa = { state: S, cur: () => cur, G, plan, walk: () => walk(), LESSONS, RLESSONS, TRACKS };
 show(S.setup ? 'map' : 'title');
 })();

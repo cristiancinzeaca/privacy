@@ -491,3 +491,49 @@ p { margin: 0; }
 .bead.b { background: radial-gradient(circle at 35% 30%, #9cc7ff, #2f6fed 70%); }
 .bead.x { background: #f6e7cd; box-shadow: none; border: 2px dashed #e63946; opacity: .7; }
 .bead.off { background: #f6e7cd; box-shadow: none; border: 2px dashed rgba(120, 90, 50, .35); }
+
+/* school: the two paths, the little cat, reading tiles, keypad, balloons, emoji beads */
+.tabs2 { margin-bottom: 10px; }
+.tabs2 button { flex: 1; }
+.lesson-pg .topbar .cat.mini { position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
+.lesson-pg .stim.grow { flex: 1; }
+.lesson-pg .word.lc { letter-spacing: .06em; font-size: 3.4rem; }
+.lesson-pg .word .hl { color: var(--coral); }
+.lesson-pg .sent { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; line-height: 1.25; text-wrap: balance; }
+.lesson-pg .model { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: .06em; color: var(--ink-soft); opacity: .6; }
+.lesson-pg .petzone { min-height: 200px; }
+.opt.ltr { font-family: var(--font-display); font-size: 2rem; letter-spacing: .04em; }
+.opts.two .opt { font-size: 2.6rem; min-height: 76px; }
+.built { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 54px; }
+.built span { min-width: 46px; height: 50px; padding: 0 8px; border-bottom: 4px solid var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; }
+.built span.cur { border-color: var(--grape); background: #efeaff; border-radius: 8px 8px 0 0; }
+.built span.in { border-color: transparent; background: var(--sun); border-radius: 12px; animation: pop .25s; }
+.built.good span { background: var(--good); color: #fff; }
+.built.wide span { font-size: 1.15rem; min-width: 34px; height: 42px; padding: 0 6px; }
+.tiles.rt { flex: none; gap: 8px; padding-bottom: 6px; }
+.tiles.rt .tile { width: auto; min-width: 54px; padding: 0 12px; }
+.tiles.rt.wide .tile { font-size: 1.2rem; height: 48px; min-width: 44px; }
+.tile.hint { outline: 4px dashed var(--grape); outline-offset: 2px; }
+.pval { display: inline-grid; place-items: center; min-width: 96px; height: 52px; padding: 0 10px; border: 4px solid var(--grape); border-radius: 14px; background: #efeaff; font-family: var(--font-display); font-weight: 800; font-size: 2rem; font-variant-numeric: tabular-nums; }
+.pval.good { border-color: var(--good); background: var(--good); color: #fff; animation: pop .35s; }
+.pval.shake { animation: shake .35s; }
+.pad { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.pad button { height: 48px; border: 0; border-radius: 14px; background: var(--bg); color: var(--ink); box-shadow: 0 4px 0 var(--line); font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; }
+.pad button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.pad .del { grid-column: span 2; }
+.pad .go { grid-column: span 3; background: var(--good); color: #fff; box-shadow: 0 4px 0 #1f9454; font-size: 1.15rem; }
+.opts.pops { gap: 22px 10px; padding: 4px 0 18px; }
+.opts.pops .opt { position: relative; justify-self: center; width: 92px; height: 104px; min-height: 0; padding: 0; border-radius: 50% 50% 50% 50% / 46% 46% 54% 54%; color: #fff; box-shadow: inset -8px -10px 0 rgba(0, 0, 0, .13); animation: bob 1.1s ease-in-out infinite alternate; }
+.opts.pops .opt::after { content: ''; position: absolute; top: 100%; left: 50%; width: 2px; height: 16px; background: var(--line); }
+.opts.pops .opt:nth-child(1) { background: #ff6b6b; }
+.opts.pops .opt:nth-child(2) { background: #3d8bfd; animation-delay: -.5s; }
+.opts.pops .opt:nth-child(3) { background: #2fbf71; animation-delay: -.8s; }
+.opts.pops .opt:nth-child(4) { background: #f5a524; animation-delay: -.3s; }
+.opts.pops .opt.ok { animation: balloon .45s ease-out forwards; }
+.opts.pops .opt.no { animation: shake .35s; }
+@keyframes balloon { 40% { transform: scale(1.35); opacity: 1; } 100% { transform: scale(1.7); opacity: 0; } }
+.abacus.em { background: #fff8e8; border-style: dashed; }
+.abacus.em .rod { background: none; }
+.abacus.em .bead { display: grid; place-items: center; background: none; box-shadow: none; border: 0; font-style: normal; font-size: 1.45rem; line-height: 1; }
+.abacus.em.r10 .bead { font-size: 1.05rem; }
+.abacus.em .bead.x { opacity: .28; filter: grayscale(1); }

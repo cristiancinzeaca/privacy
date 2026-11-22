@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -24,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /** The whole app: one full-screen WebView showing the game bundled in assets/www. */
@@ -35,6 +38,9 @@ public class MainActivity extends Activity {
     private static final int BG = Color.rgb(0xE6, 0xEB, 0xFF);
 
     private WebView web;
+    private TextToSpeech tts;
+    private volatile boolean ttsReady;
+    private int said;
 
     @Override
     protected void onCreate(Bundle saved) {
@@ -98,7 +104,36 @@ public class MainActivity extends Activity {
             }
         });
 
+        startVoice("com.google.android.tts");
         if (saved == null || web.restoreState(saved) == null) web.loadUrl(START);
+    }
+
+    /** The phone's own voice, for phrases that have no recording. Google's voice first (it knows the
+     *  most languages), then whatever the phone uses by default. */
+    private void startVoice(final String engine) {
+        TextToSpeech.OnInitListener ready = status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                    @Override public void onStart(String id) { }
+                    @Override public void onDone(String id) { spoken(); }
+                    @Override public void onError(String id) { spoken(); }
+                });
+                ttsReady = true;
+            } else if (engine != null) {
+                try { tts.shutdown(); } catch (Exception ignored) { }
+                startVoice(null);
+            }
+        };
+        try {
+            tts = engine == null ? new TextToSpeech(this, ready) : new TextToSpeech(this, ready, engine);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void spoken() {
+        runOnUiThread(() -> {
+            try { web.evaluateJavascript("window.__ttsDone&&window.__ttsDone()", null); } catch (Exception ignored) { }
+        });
     }
 
     private static WebResourceResponse missing() {
@@ -127,6 +162,27 @@ public class MainActivity extends Activity {
 
     /** What the game can ask of the phone. Called from JavaScript as ElGatoApp.vibrate("45,60,45"). */
     private class Bridge {
+        /** Says a phrase in "ro", "es" or "en". False when the phone has no voice for that language. */
+        @JavascriptInterface
+        public boolean speak(String text, String lang) {
+            try {
+                if (!ttsReady || text == null || text.length() > 400) return false;
+                Locale loc = "es".equals(lang) ? new Locale("es", "ES")
+                        : "en".equals(lang) ? Locale.US : new Locale("ro", "RO");
+                int r = tts.setLanguage(loc);
+                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) return false;
+                tts.setSpeechRate(0.85f);
+                return tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "u" + (++said)) == TextToSpeech.SUCCESS;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void stopSpeak() {
+            try { if (ttsReady) tts.stop(); } catch (Exception ignored) { }
+        }
+
         @JavascriptInterface
         public void vibrate(String pattern) {
             try {
@@ -187,6 +243,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         web.onPause(); // also silences sounds while the app is in the background
+        try { if (ttsReady) tts.stop(); } catch (Exception ignored) { }
     }
 
     @Override
@@ -203,6 +260,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        try { if (tts != null) tts.shutdown(); } catch (Exception ignored) { }
         web.destroy();
         super.onDestroy();
     }
